@@ -9,8 +9,8 @@ import json
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.figure_factory as ff
-#from fpdf import FPDF
-#import base64
+from fpdf import FPDF
+import base64
 import altair as alt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -77,37 +77,77 @@ if "cycle_right_1" not in st.session_state:
 if "cycle_right_2" not in st.session_state:
     st.session_state.cycle_right_2 = 1
 
+df_left = pd.read_csv('p5l_arba.csv')
+df_right= pd.read_csv('p5r_arba.csv')
+report_left = open('p5l_arba.json')
+report_right = open('p5r_arba.json')
+df_left, df_right, data_left, data_right = load_data(df_left, df_right, report_left, report_right)
+lcc, lsc, rcc, rsc = get_candidates(data_left,data_right)
 
-select_plane = st.sidebar.selectbox(
-    "Seleccionar el Plano",
-    ("","Sagital", "Frontal","lala")
-)
-if select_plane=="Sagital":
-    select_contact = st.sidebar.selectbox(
-        "Seleccionar contacto",
-        ("Contacto inicial", "Apoyo medio")
-    )
-elif select_plane=="Frontal":
-    select_contact = st.sidebar.selectbox(
-        "Seleccionar contacto",
-        ("Contacto inicial2", "Apoyo medio2")
-    )
+#select_plane = st.sidebar.selectbox(
+#    "Seleccionar el Plano",
+#    ("","Sagital", "Frontal","lala")
+#)
+#if select_plane=="Sagital":
+#    select_contact = st.sidebar.selectbox(
+#        "Seleccionar contacto",
+#        ("Contacto inicial", "Apoyo medio")
+#    )
+#elif select_plane=="Frontal":
+#    select_contact = st.sidebar.selectbox(
+#        "Seleccionar contacto",
+#        ("Contacto inicial2", "Apoyo medio2")
+#    )
 
-st.sidebar.button("Recomendaciones")
-st.sidebar.button("Exportar")
+window = 5
 
-st.header("Reporte ARBA")
 
+#st.sidebar.button("Recomendaciones")
+#st.sidebar.button("Exportar")
+
+
+st.title('Reporte ABMA')
+st.header('Datos paciente')
+
+coldp1, coldp2 = st.columns(2)
+
+with coldp1:
+    st.write({
+        'Nombre': 'Nombre1 Nombre2 Apellido1 Apellido2', 
+        'Edad': '30',
+        'Mail': 'nombre.apellido@lanek.cl',
+        })
+
+with coldp2:
+    st.write({
+        'Fecha de evaluación': '05/04/2022', 
+        'Fecha de reportería': '06/04/2022',
+        })
+
+
+
+st.header('Datos clínicos')
+
+antecedentes = st.sidebar.text_input('Antecedentes', key='antecedentes')
+st.write('Antecedentes:', antecedentes)
+
+km_semanales = st.sidebar.text_input('Kilómetros semanales', key='km_semanales')
+st.write('Kilómetros semanales:', km_semanales)
+
+graphics = False
 show_angles = st.sidebar.checkbox('Show angles?', value=False)
 if show_angles:
+    graphics = True
     ang_list = st.sidebar.multiselect(
         'Seleccionar ángulos a graficar',
         ['Tronco', 'Cadera', 'Rodilla', 'Tobillo'],
         ['Tronco', 'Cadera', 'Rodilla', 'Tobillo'],
         key="ang_list")
 
+
 show_x_pos = st.sidebar.checkbox('Show x positions?', value=False)
 if show_x_pos:
+    graphics = True
     x_pos_list = st.sidebar.multiselect(
         'Seleccionar posiciones x a graficar',
         ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
@@ -116,6 +156,7 @@ if show_x_pos:
 
 show_y_pos = st.sidebar.checkbox('Show y positions?', value=False)
 if show_y_pos:
+    graphics = True
     y_pos_list = st.sidebar.multiselect(
         'Seleccionar posiciones y a graficar',
         ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
@@ -124,6 +165,7 @@ if show_y_pos:
 
 show_xy_pos = st.sidebar.checkbox('Show x/y positions?', value=False)
 if show_xy_pos:
+    graphics = True
     xy_pos_list = st.sidebar.multiselect(
         'Seleccionar posiciones x/y a graficar',
         ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
@@ -132,25 +174,19 @@ if show_xy_pos:
 
 show_heatmaps = st.sidebar.checkbox('Show Heatmaps?', value=False)
 if show_heatmaps:
+    graphics = True
     heat_list = st.sidebar.multiselect(
         'Seleccionar mapas de calor a graficar',
         ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
         ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
         key="heat_list")
 
-window = 10
 
-df_left = pd.read_csv('p5l_arba.csv')
-df_right= pd.read_csv('p5r_arba.csv')
-report_left = open('p5l_arba.json')
-report_right = open('p5r_arba.json')
-df_left, df_right, data_left, data_right = load_data(df_left, df_right, report_left, report_right)
-lcc, lsc, rcc, rsc = get_candidates(data_left,data_right)
+st.header('Visual')
+colvis1, colvis2 = st.columns(2)
 
-column1, column2 = st.columns(2)
-# obtener frame
 
-with column1:
+with colvis1:
     video = cv2.VideoCapture("p5l_arba.mp4")
     frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
@@ -216,127 +252,9 @@ with column1:
     comentario_left_2 = st.text_input('Comentarios', key='comentario_left_2')
     st.write('comentario:', comentario_left_2)
 
-    st.write(f'Average run cycle: {round(60*120/np.average(np.diff(lcc)),3)} ciclos por minuto')
+    st.write(f'Average run cycle: {round(120/np.average(np.diff(lcc)),3)} [Hz]')
 
-
-    if show_angles:
-        ang_left_list = [s + " LI" for s in ang_list]
-        """# Gráficos de ángulos"""
-
-        #ang_left_list = st.multiselect(
-        #    'Seleccionar ángulos',
-        #    ['Tronco LI', 'Cadera LI', 'Rodilla LI', 'Tobillo LI'],
-        #    ['Tronco LI', 'Cadera LI', 'Rodilla LI', 'Tobillo LI'])
-
-        #ang_left_list=[]
-        #if st.checkbox('Tronco L', value=True, help="Ángulo del tronco respecto a la vertical"): ang_left_list.append('Tronco LI')
-        #if st.checkbox('Cadera L', value=True, help="Ángulo entre el tronco y la rodilla"): ang_left_list.append('Cadera LI')
-        #if st.checkbox('Rodilla L', value=True, help="Ángulo entre la cadera y el tobillo"): ang_left_list.append('Rodilla LI')
-        #if st.checkbox('Tobillo L', value=True, help="Ángulo del tobillo respecto a la horizontal"): ang_left_list.append('Tobillo LI')
-
-        #min_range, max_range = st.slider("Rango de ciclos de carrera izquierda", 0, 25, [1, 3], 1, format=None, key='left_angle_slider')
-        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, 2, 1, format=None, key='left_angle_slider')
-        ang_left = get_data(df_left, ang_left_list, lcc[left_range])
-        st.line_chart(ang_left)
-
-    if show_x_pos:
-        x_left_list = [s + " I_x" for s in x_pos_list]
-        #x_left_list=[]
-        #if st.checkbox('Acromion Lx', value=True): x_left_list.append('Acromion I_x')
-        #if st.checkbox('Cadera Lx', value=True): x_left_list.append('Cadera I_x')
-        #if st.checkbox('Rodilla Lx', value=True): x_left_list.append('Rodilla I_x')
-        #if st.checkbox('Tobillo Lx', value=True): x_left_list.append('Tobillo I_x')
-        #if st.checkbox('Metatarso Lx', value=True): x_left_list.append('Metatarso I_x')
-
-        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, 2, 1, format=None, key='left_x_slider')
-        x_left = get_data(df_left, x_left_list, lcc[left_range])
-        st.line_chart(x_left)
-
-    if show_y_pos:
-        y_left_list = [s + " I_y" for s in y_pos_list]
-        #y_left_list=[]
-        #if st.checkbox('Acromion Ly', value=True): y_left_list.append('Acromion I_y')
-        #if st.checkbox('Cadera Ly', value=True): y_left_list.append('Cadera I_y')
-        #if st.checkbox('Rodilla Ly', value=True): y_left_list.append('Rodilla I_y')
-        #if st.checkbox('Tobillo Ly', value=True): y_left_list.append('Tobillo I_y')
-        #if st.checkbox('Metatarso Ly', value=True): y_left_list.append('Metatarso I_y')
-
-        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, 2, 1, format=None, key='left_y_slider')
-        y_left = get_data(df_left, y_left_list, lcc[left_range])
-        st.line_chart(-y_left)
-        
-    if show_xy_pos:
-
-        min_range, max_range = st.slider("Rango de ciclos de carrera izquierda", 0, frame_count, [0, 200], 1, format=None, key='left_position_slider')
-
-        trace_acro = go.Scatter(
-            x=df_left['Acromion I_x'][min_range:max_range],
-            y=-df_left['Acromion I_y'][min_range:max_range],
-            name='Acromion L',
-            )
-
-        trace_hip = go.Scatter(
-            x=df_left['Cadera I_x'][min_range:max_range],
-            y=-df_left['Cadera I_y'][min_range:max_range],
-            name='Cadera L',
-            )
-
-        trace_knee = go.Scatter(
-            x=df_left['Rodilla I_x'][min_range:max_range],
-            y=-df_left['Rodilla I_y'][min_range:max_range],
-            name='Rodilla L',
-            )
-
-        trace_ankle = go.Scatter(
-            x=df_left['Tobillo I_x'][min_range:max_range],
-            y=-df_left['Tobillo I_y'][min_range:max_range],
-            name='Tobillo L',
-            )
-
-        trace_meta = go.Scatter(
-            x=df_left['Metatarso I_x'][min_range:max_range],
-            y=-df_left['Metatarso I_y'][min_range:max_range],
-            name='Metatarso L',
-            )
-
-        fig = make_subplots(specs=[[{"secondary_y": False}]])
-        #if st.checkbox('Acromion L', value=True): fig.add_trace(trace_acro)
-        #if st.checkbox('Cadera L', value=True): fig.add_trace(trace_hip)
-        #if st.checkbox('Rodilla L', value=True): fig.add_trace(trace_knee)
-        #if st.checkbox('Tobillo L', value=True): fig.add_trace(trace_ankle)
-        #if st.checkbox('Metatarso L', value=True): fig.add_trace(trace_meta)
-        if "Acromion" in xy_pos_list: fig.add_trace(trace_acro)
-        if "cadera" in xy_pos_list: fig.add_trace(trace_hip)
-        if "Rodilla" in xy_pos_list: fig.add_trace(trace_knee)
-        if "Tobillo" in xy_pos_list: fig.add_trace(trace_ankle)
-        if "Metatarso" in xy_pos_list: fig.add_trace(trace_meta)
-        st.plotly_chart(fig, use_container_width=True)
-
-
-    if show_heatmaps:
-        """# Mapas de calor"""
-        if "Acromion" in heat_list:
-            acro_left = px.density_heatmap(x=df_left["Acromion I_x"], y=-df_left["Acromion I_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")#,text_auto=True)
-            st.plotly_chart(acro_left, use_container_width=True)
-
-        if "Cadera" in heat_list:
-            hip_left = px.density_heatmap(x=df_left["Cadera I_x"], y=-df_left["Cadera I_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")
-            st.plotly_chart(hip_left, use_container_width=True)
-
-        if "Rodilla" in heat_list:
-            knee_left = px.density_heatmap(x=df_left["Rodilla I_x"], y=-df_left["Rodilla I_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")
-            st.plotly_chart(knee_left, use_container_width=True)
-
-        if "Tobillo" in heat_list:
-            ankle_left = px.density_heatmap(x=df_left["Tobillo I_x"], y=-df_left["Tobillo I_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")
-            st.plotly_chart(ankle_left, use_container_width=True)
-
-        if "Metatarso" in heat_list:
-            meta_left = px.density_heatmap(x=df_left["Metatarso I_x"], y=-df_left["Metatarso I_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")
-            st.plotly_chart(meta_left, use_container_width=True)
-
-
-with column2:
+with colvis2:
 
     video = cv2.VideoCapture("p5r_arba.mp4")
     frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -393,11 +311,37 @@ with column2:
     comentario4 = st.text_input('Comentario', key='comentario_right_2')
     st.write('comentario:', comentario4)
 
-    st.write(f'Average run cycle: {round(60*120/np.average(np.diff(rcc)),3)} ciclos por minuto')
+    st.write(f'Average run cycle: {round(120/np.average(np.diff(rcc)),3)} [Hz]')
 
-    if show_angles:
+
+if graphics: 
+    st.header('Gráficos')
+
+if show_angles:
+    st.subheader('Ángulos articulares')
+    colang1, colang2 = st.columns(2)
+
+    with colang1:
+        ang_left_list = [s + " LI" for s in ang_list]
+
+        #ang_left_list = st.multiselect(
+        #    'Seleccionar ángulos',
+        #    ['Tronco LI', 'Cadera LI', 'Rodilla LI', 'Tobillo LI'],
+        #    ['Tronco LI', 'Cadera LI', 'Rodilla LI', 'Tobillo LI'])
+
+        #ang_left_list=[]
+        #if st.checkbox('Tronco L', value=True, help="Ángulo del tronco respecto a la vertical"): ang_left_list.append('Tronco LI')
+        #if st.checkbox('Cadera L', value=True, help="Ángulo entre el tronco y la rodilla"): ang_left_list.append('Cadera LI')
+        #if st.checkbox('Rodilla L', value=True, help="Ángulo entre la cadera y el tobillo"): ang_left_list.append('Rodilla LI')
+        #if st.checkbox('Tobillo L', value=True, help="Ángulo del tobillo respecto a la horizontal"): ang_left_list.append('Tobillo LI')
+
+        #min_range, max_range = st.slider("Rango de ciclos de carrera izquierda", 0, 25, [1, 3], 1, format=None, key='left_angle_slider')
+        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, 2, 1, format=None, key='left_angle_slider')
+        ang_left = get_data(df_left, ang_left_list, lcc[left_range])
+        st.line_chart(ang_left)
+
+    with colang2:
         ang_right_list = [s + " LD" for s in ang_list]
-        """# Gráficos de ángulos"""
         #ang_right_list = st.multiselect(
         #    'Seleccionar ángulos a graficar',
         #    ['Tronco LD', 'Cadera LD', 'Rodilla LD', 'Tobillo LD'],
@@ -412,7 +356,24 @@ with column2:
         ang_right = get_data(df_right, ang_right_list, rcc[right_range])
         st.line_chart(ang_right)
 
-    if show_x_pos:
+if show_x_pos:
+    st.subheader('Posiciones en el eje X')
+    colposx1, colposx2 = st.columns(2)
+
+    with colposx1:
+        x_left_list = [s + " I_x" for s in x_pos_list]
+        #x_left_list=[]
+        #if st.checkbox('Acromion Lx', value=True): x_left_list.append('Acromion I_x')
+        #if st.checkbox('Cadera Lx', value=True): x_left_list.append('Cadera I_x')
+        #if st.checkbox('Rodilla Lx', value=True): x_left_list.append('Rodilla I_x')
+        #if st.checkbox('Tobillo Lx', value=True): x_left_list.append('Tobillo I_x')
+        #if st.checkbox('Metatarso Lx', value=True): x_left_list.append('Metatarso I_x')
+
+        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, 2, 1, format=None, key='left_x_slider')
+        x_left = get_data(df_left, x_left_list, lcc[left_range])
+        st.line_chart(x_left)
+
+    with colposx2:
         x_right_list = [s + " D_x" for s in x_pos_list]
         #x_right_list=[]
         #if st.checkbox('Acromion Rx', value=True): x_right_list.append('Acromion D_x')
@@ -425,7 +386,24 @@ with column2:
         x_right = get_data(df_right, x_right_list, rcc[right_range])
         st.line_chart(x_right)
 
-    if show_y_pos:
+if show_y_pos:
+    st.subheader('Posiciones en el eje Y')
+    colposy1, colposy2 = st.columns(2)
+
+    with colposy1:
+        y_left_list = [s + " I_y" for s in y_pos_list]
+        #y_left_list=[]
+        #if st.checkbox('Acromion Ly', value=True): y_left_list.append('Acromion I_y')
+        #if st.checkbox('Cadera Ly', value=True): y_left_list.append('Cadera I_y')
+        #if st.checkbox('Rodilla Ly', value=True): y_left_list.append('Rodilla I_y')
+        #if st.checkbox('Tobillo Ly', value=True): y_left_list.append('Tobillo I_y')
+        #if st.checkbox('Metatarso Ly', value=True): y_left_list.append('Metatarso I_y')
+
+        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, 2, 1, format=None, key='left_y_slider')
+        y_left = get_data(df_left, y_left_list, lcc[left_range])
+        st.line_chart(-y_left)
+
+    with colposy2:
         y_right_list = [s + " D_y" for s in y_pos_list]
         #y_right_list=[]
         #if st.checkbox('Acromion Ry', value=True): y_right_list.append('Acromion D_y')
@@ -438,8 +416,58 @@ with column2:
         y_right = get_data(df_right, y_right_list, rcc[right_range])
         st.line_chart(-y_right)
 
-    if show_xy_pos:
-        
+
+if show_xy_pos:
+    st.subheader('Posiciones en el plano XY')
+    colposxy1, colposxy2 = st.columns(2)
+
+    with colposxy1:
+        min_range, max_range = st.slider("Rango de ciclos de carrera izquierda", 0, frame_count, [0, 200], 1, format=None, key='left_position_slider')
+
+        trace_acro = go.Scatter(
+            x=df_left['Acromion I_x'][min_range:max_range],
+            y=-df_left['Acromion I_y'][min_range:max_range],
+            name='Acromion L',
+            )
+
+        trace_hip = go.Scatter(
+            x=df_left['Cadera I_x'][min_range:max_range],
+            y=-df_left['Cadera I_y'][min_range:max_range],
+            name='Cadera L',
+            )
+
+        trace_knee = go.Scatter(
+            x=df_left['Rodilla I_x'][min_range:max_range],
+            y=-df_left['Rodilla I_y'][min_range:max_range],
+            name='Rodilla L',
+            )
+
+        trace_ankle = go.Scatter(
+            x=df_left['Tobillo I_x'][min_range:max_range],
+            y=-df_left['Tobillo I_y'][min_range:max_range],
+            name='Tobillo L',
+            )
+
+        trace_meta = go.Scatter(
+            x=df_left['Metatarso I_x'][min_range:max_range],
+            y=-df_left['Metatarso I_y'][min_range:max_range],
+            name='Metatarso L',
+            )
+
+        fig = make_subplots(specs=[[{"secondary_y": False}]])
+        #if st.checkbox('Acromion L', value=True): fig.add_trace(trace_acro)
+        #if st.checkbox('Cadera L', value=True): fig.add_trace(trace_hip)
+        #if st.checkbox('Rodilla L', value=True): fig.add_trace(trace_knee)
+        #if st.checkbox('Tobillo L', value=True): fig.add_trace(trace_ankle)
+        #if st.checkbox('Metatarso L', value=True): fig.add_trace(trace_meta)
+        if "Acromion" in xy_pos_list: fig.add_trace(trace_acro)
+        if "cadera" in xy_pos_list: fig.add_trace(trace_hip)
+        if "Rodilla" in xy_pos_list: fig.add_trace(trace_knee)
+        if "Tobillo" in xy_pos_list: fig.add_trace(trace_ankle)
+        if "Metatarso" in xy_pos_list: fig.add_trace(trace_meta)
+        st.plotly_chart(fig, use_container_width=True)
+
+    with colposxy2:
         min_range, max_range = st.slider("Rango de ciclos de carrera derecha", 0, frame_count, [0, 200], 1, format=None, key='right_position_slider')
 
         trace_acro = go.Scatter(
@@ -484,9 +512,33 @@ with column2:
         if "Tobillo" in xy_pos_list: fig.add_trace(trace_ankle)
         if "Metatarso" in xy_pos_list: fig.add_trace(trace_meta)
         st.plotly_chart(fig, use_container_width=True)
-    
-    if show_heatmaps:
-        """# Mapas de calor"""
+
+if show_heatmaps:
+    st.subheader('Mapas de calor')
+    colheat1, colheat2 = st.columns(2)
+
+    with colheat1:
+        if "Acromion" in heat_list:
+            acro_left = px.density_heatmap(x=df_left["Acromion I_x"], y=-df_left["Acromion I_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")#,text_auto=True)
+            st.plotly_chart(acro_left, use_container_width=True)
+
+        if "Cadera" in heat_list:
+            hip_left = px.density_heatmap(x=df_left["Cadera I_x"], y=-df_left["Cadera I_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")
+            st.plotly_chart(hip_left, use_container_width=True)
+
+        if "Rodilla" in heat_list:
+            knee_left = px.density_heatmap(x=df_left["Rodilla I_x"], y=-df_left["Rodilla I_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")
+            st.plotly_chart(knee_left, use_container_width=True)
+
+        if "Tobillo" in heat_list:
+            ankle_left = px.density_heatmap(x=df_left["Tobillo I_x"], y=-df_left["Tobillo I_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")
+            st.plotly_chart(ankle_left, use_container_width=True)
+
+        if "Metatarso" in heat_list:
+            meta_left = px.density_heatmap(x=df_left["Metatarso I_x"], y=-df_left["Metatarso I_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")
+            st.plotly_chart(meta_left, use_container_width=True)
+
+    with colheat2:
         if "Acromion" in heat_list:
             acro_right = px.density_heatmap(x=df_right["Acromion D_x"], y=-df_right["Acromion D_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")
             st.plotly_chart(acro_right, use_container_width=True)
@@ -507,4 +559,6 @@ with column2:
             meta_right = px.density_heatmap(x=df_right["Metatarso D_x"], y=-df_right["Metatarso D_y"], nbinsx=20, nbinsy=20, marginal_x="histogram", marginal_y="histogram")
             st.plotly_chart(meta_right, use_container_width=True)
 
+
+        
 

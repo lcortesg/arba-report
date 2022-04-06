@@ -317,13 +317,13 @@ colad1, colad2 = st.columns(2)
 with colad1:
     st.write({
         'Cadencia izquierda': f'{round(120/np.average(np.diff(lcc)),3)} [Hz]', 
-        'Ciclo de carrera izquierda': f'{60*round(120/np.average(np.diff(lcc)),3)} ciclos por minuto',
+        'Ciclo de carrera izquierda': f'{round(60*120/np.average(np.diff(lcc)),3)} ciclos por minuto',
         })
 
 with colad2:
     st.write({
         'Cadencia derecha': f'{round(120/np.average(np.diff(rcc)),3)} [Hz]', 
-        'Ciclo de carrera derecha': f'{60*round(120/np.average(np.diff(rcc)),3)} ciclos por minuto',
+        'Ciclo de carrera derecha': f'{round(60*120/np.average(np.diff(rcc)),3)} ciclos por minuto',
         })
 
 

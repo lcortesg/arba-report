@@ -320,7 +320,7 @@ with colad1:
         'Ciclo de carrera izquierda': f'{60*round(120/np.average(np.diff(lcc)),3)} ciclos por minuto',
         })
 
-with colad1:
+with colad2:
     st.write({
         'Cadencia derecha': f'{round(120/np.average(np.diff(rcc)),3)} [Hz]', 
         'Ciclo de carrera derecha': f'{60*round(120/np.average(np.diff(rcc)),3)} ciclos por minuto',

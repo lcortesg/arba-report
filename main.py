@@ -14,24 +14,26 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 @st.cache
-
 def load_data(df_left, df_right, report_left, report_right):
     data_left = json.load(report_left)
     data_right = json.load(report_right)
     return df_left, df_right, data_left, data_right
 
+@st.cache
 def get_data(df, list, max_range):
     data = {}
     for descriptor in list:
         data[descriptor] = df[descriptor][0:max_range]
     return pd.DataFrame(data)
 
+@st.cache
 def get_positions(df, marker_list):
     pos = {}
     for marker in marker_list:
         pos[marker] = df[marker]#[0:max_range]
     return pd.DataFrame(pos)
 
+@st.cache
 def get_candidates(data_left, data_right):
     lsc = data_left["Metatarso I"]["x_max"]
     rsc = data_right["Metatarso D"]["x_min"]
@@ -51,10 +53,6 @@ def get_candidates(data_left, data_right):
         rcc.append([x for x in right_ankle_ymax if x > value][0])
 
     return lcc, lsc, rcc, rsc
-
-def create_download_link(val, filename):
-    b64 = base64.b64encode(val)  # val looks like b'...'
-    return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}.pdf">Download file</a>'
 
 
 st.set_page_config(layout="wide")
@@ -110,17 +108,22 @@ st.header('Datos paciente')
 coldp1, coldp2 = st.columns(2)
 
 with coldp1:
-    st.write({
-        'Nombre': 'Nombre1 Nombre2 Apellido1 Apellido2', 
-        'Edad': '30',
-        'Mail': 'nombre.apellido@lanek.cl',
-        })
+    st.write('Nombre: ', 'Nombre1 Nombre2 Apellido1 Apellido2')
+    st.write('Edad: ', 30)
+    st.write('Mail: ', 'nombre.apellido@lanek.cl')
+    #st.write({
+    #    'Nombre': 'Nombre1 Nombre2 Apellido1 Apellido2', 
+    #    'Edad': '30',
+    #    'Mail': 'nombre.apellido@lanek.cl',
+    #    })
 
 with coldp2:
-    st.write({
-        'Fecha de evaluación': '05/04/2022', 
-        'Fecha de reportería': '06/04/2022',
-        })
+    st.write('Fecha de evaluación: ', '05/04/2022')
+    st.write('Fecha de reportería: ', '06/04/2022')
+    #st.write({
+    #    'Fecha de evaluación': '05/04/2022', 
+    #    'Fecha de reportería': '06/04/2022',
+    #    })
 
 
 
@@ -133,7 +136,7 @@ km_semanales = st.sidebar.text_input('Kilómetros semanales', key='km_semanales'
 st.write('Kilómetros semanales:', km_semanales)
 
 graphics = False
-show_angles = st.sidebar.checkbox('Show angles?', value=False)
+show_angles = st.sidebar.checkbox('Mostrar ángulos', value=False)
 if show_angles:
     graphics = True
     ang_list = st.sidebar.multiselect(
@@ -143,7 +146,7 @@ if show_angles:
         key="ang_list")
 
 
-show_x_pos = st.sidebar.checkbox('Show x positions?', value=False)
+show_x_pos = st.sidebar.checkbox('Mostrar posiciones X', value=False)
 if show_x_pos:
     graphics = True
     x_pos_list = st.sidebar.multiselect(
@@ -152,7 +155,7 @@ if show_x_pos:
         ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'], 
         key="x_pos_list")
 
-show_y_pos = st.sidebar.checkbox('Show y positions?', value=False)
+show_y_pos = st.sidebar.checkbox('Mostrar posiciones Y', value=False)
 if show_y_pos:
     graphics = True
     y_pos_list = st.sidebar.multiselect(
@@ -161,7 +164,7 @@ if show_y_pos:
         ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
         key="y_pos_list")
 
-show_xy_pos = st.sidebar.checkbox('Show x/y positions?', value=False)
+show_xy_pos = st.sidebar.checkbox('Mostrar plano XY', value=False)
 if show_xy_pos:
     graphics = True
     xy_pos_list = st.sidebar.multiselect(
@@ -170,7 +173,7 @@ if show_xy_pos:
         ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
         key="xy_pos_list")
 
-show_heatmaps = st.sidebar.checkbox('Show Heatmaps?', value=False)
+show_heatmaps = st.sidebar.checkbox('Mostrar mapas de calor', value=False)
 if show_heatmaps:
     graphics = True
     heat_list = st.sidebar.multiselect(
@@ -205,20 +208,23 @@ with colvis1:
 
     st.image(frame, caption=f"Tronco LI: {round(df_left.iloc[id1]['Tronco LI'],1)}, Cadera LI: {round(df_left.iloc[id1]['Cadera LI'],1)}, Rodilla LI: {round(df_left.iloc[id1]['Rodilla LI'],1)}, Tobillo LI: {round(df_left.iloc[id1]['Tobillo LI'],1)}", channels='BGR')
 
-    st.write({
-        'Tronco LI': round(df_left.iloc[id1]['Tronco LI'],1), 
-        'Cadera LI': round(df_left.iloc[id1]['Cadera LI'],1),
-        'Rodilla LI': round(df_left.iloc[id1]['Rodilla LI'],1),
-        'Tobillo LI': round(df_left.iloc[id1]['Tobillo LI'],1)
-        })
+    #st.write({
+    #    'Tronco LI': round(df_left.iloc[id1]['Tronco LI'],1), 
+    #    'Cadera LI': round(df_left.iloc[id1]['Cadera LI'],1),
+    #    'Rodilla LI': round(df_left.iloc[id1]['Rodilla LI'],1),
+    #    'Tobillo LI': round(df_left.iloc[id1]['Tobillo LI'],1)
+    #    })
 
-    #st.write('Tronco LI = ',round(df_left.iloc[id1]['Tronco LI'],1))
-    #st.write('Cadera LI = ',round(df_left.iloc[id1]['Cadera LI'],1))
-    #st.write('Rodilla LI = ',round(df_left.iloc[id1]['Rodilla LI'],1))
-    #st.write('Tobillo LI = ',round(df_left.iloc[id1]['Tobillo LI'],1))
+    st.write('Tronco LI = ',round(df_left.iloc[id1]['Tronco LI'],1))
+    st.write('Cadera LI = ',round(df_left.iloc[id1]['Cadera LI'],1))
+    st.write('Rodilla LI = ',round(df_left.iloc[id1]['Rodilla LI'],1))
+    st.write('Tobillo LI = ',round(df_left.iloc[id1]['Tobillo LI'],1))
 
     comentario_left_1 = st.text_input('Comentarios', key='comentario_left_1')
     st.write('comentario:', comentario_left_1)
+
+
+    st.subheader("Extremidad izquierda, apoyo medio")
 
     #if st.button('Next', key="next_left_2"):
     #    st.session_state.count3 += 1
@@ -273,20 +279,22 @@ with colvis2:
 
     st.image(frame,caption=f"Tronco LD: {round(df_right.iloc[id2]['Tronco LD'],1)}, Cadera LD: {round(df_right.iloc[id2]['Cadera LD'],1)}, Rodilla LD: {round(df_right.iloc[id2]['Rodilla LD'],1)}, Tobillo LD: {round(df_right.iloc[id2]['Tobillo LD'],1)}",channels='BGR')
 
-    st.write({
-        'Tronco LD': round(df_right.iloc[id2]['Tronco LD'],1), 
-        'Cadera LD': round(df_right.iloc[id2]['Cadera LD'],1),
-        'Rodilla LD': round(df_right.iloc[id2]['Rodilla LD'],1),
-        'Tobillo LD': round(df_right.iloc[id2]['Tobillo LD'],1)
-        })
+    #st.write({
+    #    'Tronco LD': round(df_right.iloc[id2]['Tronco LD'],1), 
+    #    'Cadera LD': round(df_right.iloc[id2]['Cadera LD'],1),
+    #    'Rodilla LD': round(df_right.iloc[id2]['Rodilla LD'],1),
+    #    'Tobillo LD': round(df_right.iloc[id2]['Tobillo LD'],1)
+    #    })
 
-    #st.write('Tronco LD = ', round(df_right.iloc[id2]['Tronco LD'],1))
-    #st.write('Cadera LD = ', round(df_right.iloc[id2]['Cadera LD'],1))
-    #st.write('Rodilla LD = ', round(df_right.iloc[id2]['Rodilla LD'],1))
-    #st.write('Tobillo LD = ', round(df_right.iloc[id2]['Tobillo LD'],1))
+    st.write('Tronco LD = ', round(df_right.iloc[id2]['Tronco LD'],1))
+    st.write('Cadera LD = ', round(df_right.iloc[id2]['Cadera LD'],1))
+    st.write('Rodilla LD = ', round(df_right.iloc[id2]['Rodilla LD'],1))
+    st.write('Tobillo LD = ', round(df_right.iloc[id2]['Tobillo LD'],1))
 
     comentario2 = st.text_input('Comentario', key='comentario_right_1')
     st.write('comentario:', comentario2)
+
+    st.subheader("Extremidad derecha, apoyo medio")
 
     #if st.button('Next', key="next_right_2"):
     #    st.session_state.count4 += 1
@@ -315,16 +323,20 @@ st.subheader('Adicionales')
 
 colad1, colad2 = st.columns(2)
 with colad1:
-    st.write({
-        'Cadencia izquierda': f'{round(120/np.average(np.diff(lcc)),3)} [Hz]', 
-        'Ciclo de carrera izquierda': f'{round(60*120/np.average(np.diff(lcc)),3)} ciclos por minuto',
-        })
+    st.write('Cadencia izquierda: ', f'{round(120/np.average(np.diff(lcc)),3)} [Hz]')
+    st.write('Ciclo de carrera izquierda: ', f'{round(60*120/np.average(np.diff(lcc)),3)} ciclos por minuto')
+    #st.write({
+    #    'Cadencia izquierda': f'{round(120/np.average(np.diff(lcc)),3)} [Hz]', 
+    #    'Ciclo de carrera izquierda': f'{round(60*120/np.average(np.diff(lcc)),3)} ciclos por minuto',
+    #    })
 
 with colad2:
-    st.write({
-        'Cadencia derecha': f'{round(120/np.average(np.diff(rcc)),3)} [Hz]', 
-        'Ciclo de carrera derecha': f'{round(60*120/np.average(np.diff(rcc)),3)} ciclos por minuto',
-        })
+    st.write('Cadencia derecha: ', f'{round(120/np.average(np.diff(rcc)),3)} [Hz]')
+    st.write('Ciclo de carrera derecha: ', f'{round(60*120/np.average(np.diff(rcc)),3)} ciclos por minuto')
+    #st.write({
+    #    'Cadencia derecha': f'{round(120/np.average(np.diff(rcc)),3)} [Hz]', 
+    #    'Ciclo de carrera derecha': f'{round(60*120/np.average(np.diff(rcc)),3)} ciclos por minuto',
+    #    })
 
 
 if graphics: 

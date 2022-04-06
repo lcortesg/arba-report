@@ -12,6 +12,7 @@ import plotly.figure_factory as ff
 import altair as alt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from PIL import Image
 
 @st.cache
 def load_data(df_left, df_right, report_left, report_right):
@@ -55,7 +56,14 @@ def get_candidates(data_left, data_right):
     return lcc, lsc, rcc, rsc
 
 
-st.set_page_config(layout="wide")
+im = Image.open("assets/logos/favicon.png")
+st.set_page_config(
+    page_title="ABMA Report",
+    page_icon=im,
+    layout="wide",
+)
+
+
 if 'count1' not in st.session_state:
     st.session_state.count1 = 0
 if 'count2' not in st.session_state:
@@ -102,7 +110,18 @@ window = 5
 #st.sidebar.button("Exportar")
 
 
+
 st.title('Reporte ABMA')
+#colti1, colti2 = st.columns(2)
+
+#with colti1:
+#    st.title('Reporte ABMA')
+
+#with colti2:
+#    logo = Image.open('assets/logos/lanek.png')
+#    #logo = cv2.imread('assets/logos/lanek0.png',cv2.IMREAD_UNCHANGED)
+#    st.image(logo, width = 200, channels='BGR')
+
 st.header('Datos paciente')
 
 coldp1, coldp2 = st.columns(2)

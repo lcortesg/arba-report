@@ -9,8 +9,6 @@ import json
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.figure_factory as ff
-from fpdf import FPDF
-import base64
 import altair as alt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots

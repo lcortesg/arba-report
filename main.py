@@ -250,7 +250,7 @@ with colvis1:
     comentario_left_2 = st.text_input('Comentarios', key='comentario_left_2')
     st.write('comentario:', comentario_left_2)
 
-    st.write(f'Average run cycle: {round(120/np.average(np.diff(lcc)),3)} [Hz]')
+    #st.write(f'Average run cycle: {round(120/np.average(np.diff(lcc)),3)} [Hz]')
 
 with colvis2:
 
@@ -309,7 +309,22 @@ with colvis2:
     comentario4 = st.text_input('Comentario', key='comentario_right_2')
     st.write('comentario:', comentario4)
 
-    st.write(f'Average run cycle: {round(120/np.average(np.diff(rcc)),3)} [Hz]')
+    #st.write(f'Average run cycle: {round(120/np.average(np.diff(rcc)),3)} [Hz]')
+
+st.subheader('Adicionales')
+
+colad1, colad2 = st.columns(2)
+with colad1:
+    st.write({
+        'Cadencia izquierda': f'{round(120/np.average(np.diff(lcc)),3)} [Hz]', 
+        'Ciclo de carrera izquierda': f'{60*round(120/np.average(np.diff(lcc)),3)} ciclos por minuto',
+        })
+
+with colad1:
+    st.write({
+        'Cadencia derecha': f'{round(120/np.average(np.diff(rcc)),3)} [Hz]', 
+        'Ciclo de carrera derecha': f'{60*round(120/np.average(np.diff(rcc)),3)} ciclos por minuto',
+        })
 
 
 if graphics: 

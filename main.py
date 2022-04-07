@@ -13,6 +13,7 @@ import altair as alt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from PIL import Image
+from scipy.signal import butter, filtfilt
 
 left_video_name = 'p5l_arba.mp4'
 right_video_name = 'p5r_arba.mp4'
@@ -21,6 +22,15 @@ left_video = cv2.VideoCapture(left_video_name)
 left_frame_count = int(left_video.get(cv2.CAP_PROP_FRAME_COUNT))
 right_video = cv2.VideoCapture(right_video_name)
 right_frame_count = int(right_video.get(cv2.CAP_PROP_FRAME_COUNT))
+
+@st.cache
+def butter_lowpass_filter(data, cutoff=6, fs=120, order=8):
+    nyq = 0.5 * fs  # Nyquist Frequency
+    normal_cutoff = cutoff / nyq  # Normalise frequency
+    # Get the filter coefficients
+    b, a = butter(order, normal_cutoff, btype="low", analog=False)
+    y = filtfilt(b, a, data)  # Filter data
+    return y
 
 @st.cache
 def load_video_frame(video_name, id):
@@ -36,18 +46,51 @@ def load_data(df_left, df_right, report_left, report_right):
     return df_left, df_right, data_left, data_right
 
 @st.cache
-def get_data(df, list, max_range):
+def get_data(df, list):
     data = {}
     for descriptor in list:
-        data[descriptor] = df[descriptor][0:max_range]
+        data[descriptor] = df[descriptor]
     return pd.DataFrame(data)
 
 @st.cache
-def get_positions(df, marker_list):
-    pos = {}
-    for marker in marker_list:
-        pos[marker] = df[marker]#[0:max_range]
-    return pd.DataFrame(pos)
+def get_pos(df, list, min_range, max_range):
+    data = {}
+    for descriptor in list:
+        data[descriptor] = butter_lowpass_filter(df[descriptor][min_range:max_range])
+    return pd.DataFrame(data)
+
+@st.cache
+def get_delta_old(df, list, min_range, max_range):
+    data = {}
+    for descriptor in list:
+        data_vel = []
+        data_pos = df[descriptor][min_range:max_range].tolist()
+        for i in range (len(data_pos)-1):
+            delta = (data_pos[i+1]-data_pos[i])*120
+            data_vel.append(delta)
+        data[descriptor] = butter_lowpass_filter(data_vel)
+    return pd.DataFrame(data)
+
+@st.cache
+def get_delta(df):
+    data = {}
+    for descriptor in df:
+        data_delta = []
+        data_df = df[descriptor].tolist()
+        for i in range (len(data_df)-1):
+            delta = (data_df[i+1]-data_df[i])*120
+            data_delta.append(delta)
+        data[descriptor] = butter_lowpass_filter(data_delta)
+    return pd.DataFrame(data)
+
+@st.cache
+def get_delta_simp(df):
+    data_delta = []
+    for i in range (len(df)-1):
+        delta = (df[i+1]-df[i])*120
+        data_delta.append(delta)
+    data = butter_lowpass_filter(data_delta)
+    return data
 
 @st.cache
 def get_candidates(data_left, data_right):
@@ -119,6 +162,7 @@ lcc, lsc, rcc, rsc = get_candidates(data_left,data_right)
 #    )
 
 window = 5
+default_cycle = 1
 
 
 #st.sidebar.button("Recomendaciones")
@@ -231,7 +275,7 @@ with colvis1:
     #    st.session_state.count1 -= 1
 
     st.session_state.cycle_left_1 = st.slider('Desfase de contacto izquierdo', -window, window, 0, 1, format=None, key='left_contact', help='Cambia entre los cuadros adyacentes al ciclo de carrera seleccionado')
-    ciclo_l1 = st.slider('Ciclo de carrera izquierda contacto', 0, len(lcc)-1, 1, 1, format=None, key='left_contact_slider', help='Cambia entre los diferentes ciclos de carrera')
+    ciclo_l1 = st.slider('Ciclo de carrera izquierda contacto', 0, len(lcc)-1, default_cycle, 1, format=None, key='left_contact_slider', help='Cambia entre los diferentes ciclos de carrera')
     id1 = lcc[ciclo_l1]+st.session_state.cycle_left_1
 
     frame = load_video_frame(left_video_name, id1)
@@ -264,7 +308,7 @@ with colvis1:
     #if st.button('Previous', key="prev_left_2"):
     #    st.session_state.count3 -= 1
     st.session_state.cycle_left_2 = st.slider('Desfase de separación izquierdo', -window, window, 0, 1, format=None, key='left_separation', help='Cambia entre los cuadros adyacentes al ciclo de carrera seleccionado')
-    ciclo_l2 = st.slider('Ciclo de carrera izquierda separación', 0, len(lsc)-1, 1, 1, format=None, key='left_separation_slider', help='Cambia entre los diferentes ciclos de carrera')
+    ciclo_l2 = st.slider('Ciclo de carrera izquierda separación', 0, len(lsc)-1, default_cycle, 1, format=None, key='left_separation_slider', help='Cambia entre los diferentes ciclos de carrera')
     id3 = lsc[ciclo_l2]+st.session_state.cycle_left_2
 
     frame = load_video_frame(left_video_name, id3)
@@ -301,7 +345,7 @@ with colvis2:
     #    st.session_state.count2 -= 1
 
     st.session_state.cycle_right_1 = st.slider('Desfase de contacto derecho', -window, window, 0, 1, format=None, key='right_contact', help='Cambia entre los cuadros adyacentes al ciclo de carrera seleccionado')
-    ciclo_r1 = st.slider('Ciclo de carrera derecha contacto', 0, len(rcc)-1, 1, 1, format=None, key='right_contact_slider', help='Cambia entre los diferentes ciclos de carrera')
+    ciclo_r1 = st.slider('Ciclo de carrera derecha contacto', 0, len(rcc)-1, default_cycle, 1, format=None, key='right_contact_slider', help='Cambia entre los diferentes ciclos de carrera')
     id2 = rcc[ciclo_r1]+st.session_state.cycle_right_1
 
     frame = load_video_frame(right_video_name, id2)
@@ -332,7 +376,7 @@ with colvis2:
     #if st.button('Previous', key="prev_right_2"):
     #    st.session_state.count4 -= 1
     st.session_state.cycle_right_2 = st.slider('Desfase de separación derecho', -window, window, 0, 1, format=None, key='right_separation', help='Cambia entre los cuadros adyacentes al ciclo de carrera seleccionado')
-    ciclo_r2 = st.slider('Ciclo de carrera derecha separación', 0, len(rsc)-1, 1, 1, format=None, key='right_separation_slider', help='Cambia entre los diferentes ciclos de carrera')
+    ciclo_r2 = st.slider('Ciclo de carrera derecha separación', 0, len(rsc)-1, default_cycle, 1, format=None, key='right_separation_slider', help='Cambia entre los diferentes ciclos de carrera')
     id4 = rsc[ciclo_r2]+st.session_state.cycle_right_2
 
     frame = load_video_frame(right_video_name, id4)
@@ -393,8 +437,8 @@ if show_angles:
         #if st.checkbox('Tobillo L', value=True, help="Ángulo del tobillo respecto a la horizontal"): ang_left_list.append('Tobillo LI')
 
         #min_range, max_range = st.slider("Rango de ciclos de carrera izquierda", 0, 25, [1, 3], 1, format=None, key='left_angle_slider')
-        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, 2, 1, format=None, key='left_angle_slider')
-        ang_left = get_data(df_left, ang_left_list, lcc[left_range])
+        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, default_cycle, 1, format=None, key='left_angle_slider')
+        ang_left = get_pos(df_left, ang_left_list, lcc[0], lcc[left_range])
         st.line_chart(ang_left)
 
     with colang2:
@@ -408,9 +452,9 @@ if show_angles:
         #if st.checkbox('Cadera R', value=True, help="Ángulo entre el tronco y la rodilla"): ang_right_list.append('Cadera LD')
         #if st.checkbox('Rodilla R', value=True, help="Ángulo entre la cadera y el tobillo"): ang_right_list.append('Rodilla LD')
         #if st.checkbox('Tobillo R', value=True, help="Ángulo del tobillo respecto a la horizontal"): ang_right_list.append('Tobillo LD')
-        #right_range = st.slider('Ciclos de carrera derecha', 1, 5, 2, 1, format=None, key='right_angle_slider')
-        right_range = st.number_input('Cantidad de ciclos de carrera derecha', 1, len(rcc)-1, 2, 1)
-        ang_right = get_data(df_right, ang_right_list, rcc[right_range])
+        #right_range = st.number_input('Cantidad de ciclos de carrera derecha', 1, len(rcc)-1, default_cycle, 1)
+        right_range = st.slider('Cantidad de ciclos de carrera derecha', 1, len(rcc)-1, default_cycle, 1, format=None, key='right_angle_slider')
+        ang_right = get_pos(df_right, ang_right_list, rcc[0], rcc[right_range])
         st.line_chart(ang_right)
 
 if show_x_pos:
@@ -426,9 +470,19 @@ if show_x_pos:
         #if st.checkbox('Tobillo Lx', value=True): x_left_list.append('Tobillo I_x')
         #if st.checkbox('Metatarso Lx', value=True): x_left_list.append('Metatarso I_x')
 
-        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, 2, 1, format=None, key='left_x_slider')
-        x_left = get_data(df_left, x_left_list, lcc[left_range])
+        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, default_cycle, 1, format=None, key='left_x_slider')
+        x_left = get_pos(df_left, x_left_list, lcc[0], lcc[left_range])
         st.line_chart(x_left)
+
+        """#### Velocidades eje x"""
+        x_left_vel = get_delta(x_left)
+        st.line_chart(x_left_vel)
+
+        """#### Aceleraciones eje x"""
+        x_left_acc = get_delta(x_left_vel)
+        st.line_chart(x_left_acc)
+   
+
 
     with colposx2:
         x_right_list = [s + " D_x" for s in x_pos_list]
@@ -439,9 +493,18 @@ if show_x_pos:
         #if st.checkbox('Tobillo Rx', value=True): x_right_list.append('Tobillo D_x')
         #if st.checkbox('Metatarso Rx', value=True): x_right_list.append('Metatarso D_x')
 
-        right_range = st.slider('Cantidad de ciclos de carrera derecha', 1, len(rcc)-1, 2, 1, format=None, key='right_x_slider')
-        x_right = get_data(df_right, x_right_list, rcc[right_range])
+        right_range = st.slider('Cantidad de ciclos de carrera derecha', 1, len(rcc)-1, default_cycle, 1, format=None, key='right_x_slider')
+        x_right = get_pos(df_right, x_right_list, rcc[0], rcc[right_range])
         st.line_chart(x_right)
+
+        """#### Velocidades eje x"""
+        x_right_vel = get_delta(x_right)
+        st.line_chart(x_right_vel)
+
+
+        """#### Aceleraciones eje x"""
+        x_right_acc = get_delta(x_right_vel)
+        st.line_chart(x_right_acc)
 
 if show_y_pos:
     st.subheader('Posiciones en el eje Y')
@@ -456,9 +519,18 @@ if show_y_pos:
         #if st.checkbox('Tobillo Ly', value=True): y_left_list.append('Tobillo I_y')
         #if st.checkbox('Metatarso Ly', value=True): y_left_list.append('Metatarso I_y')
 
-        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, 2, 1, format=None, key='left_y_slider')
-        y_left = get_data(df_left, y_left_list, lcc[left_range])
+        left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, default_cycle, 1, format=None, key='left_y_slider')
+
+        y_left = get_pos(df_left, y_left_list, lcc[0], lcc[left_range])
         st.line_chart(-y_left)
+
+        """#### Velocidades eje y"""
+        y_left_vel = get_delta(y_left)
+        st.line_chart(-y_left_vel)
+
+        """#### Aceleraciones eje y"""
+        y_left_acc = get_delta(y_left_vel)
+        st.line_chart(-y_left_acc)
 
     with colposy2:
         y_right_list = [s + " D_y" for s in y_pos_list]
@@ -469,9 +541,18 @@ if show_y_pos:
         #if st.checkbox('Tobillo Ry', value=True): y_right_list.append('Tobillo D_y')
         #if st.checkbox('Metatarso Ry', value=True): y_right_list.append('Metatarso D_y')
 
-        right_range = st.slider('Cantidad de ciclos de carrera derecha', 1, len(rcc)-1, 2, 1, format=None, key='right_y_slider')
-        y_right = get_data(df_right, y_right_list, rcc[right_range])
+        right_range = st.slider('Cantidad de ciclos de carrera derecha', 1, len(rcc)-1, default_cycle, 1, format=None, key='right_y_slider')
+        y_right = get_pos(df_right, y_right_list, rcc[0], rcc[right_range])
         st.line_chart(-y_right)
+
+        """#### Velocidades eje y"""
+        y_right_vel = get_delta(y_right)
+        st.line_chart(-y_right_vel)
+
+        """#### Aceleraciones eje y"""
+        y_right_acc = get_delta(y_right_vel)
+        st.line_chart(-y_right_acc)
+
 
 
 if show_xy_pos:
@@ -479,37 +560,25 @@ if show_xy_pos:
     colposxy1, colposxy2 = st.columns(2)
 
     with colposxy1:
-        min_range, max_range = st.slider("Rango de ciclos de carrera izquierda", 0, left_frame_count, [0, 200], 1, format=None, key='left_position_slider')
+        ciclo_xy= st.slider('Ciclo de carrera izquierda', 0, len(lcc)-1, 1, 1, format=None, key='left_xy_slider', help='Cambia entre los diferentes ciclos de carrera')
+        min_range, max_range = st.slider("Rango de ciclos de carrera izquierda", lcc[ciclo_xy], lcc[ciclo_xy+1], [lcc[ciclo_xy], lcc[ciclo_xy+1]], 1, format=None, key='left_position_slider')
 
-        trace_acro = go.Scatter(
-            x=df_left['Acromion I_x'][min_range:max_range],
-            y=-df_left['Acromion I_y'][min_range:max_range],
-            name='Acromion L',
-            )
+        acro_x = df_left['Acromion I_x'][min_range:max_range]
+        acro_y = -df_left['Acromion I_y'][min_range:max_range]
+        hip_x = df_left['Cadera I_x'][min_range:max_range]
+        hip_y = -df_left['Cadera I_y'][min_range:max_range]
+        knee_x = df_left['Rodilla I_x'][min_range:max_range]
+        knee_y = -df_left['Rodilla I_y'][min_range:max_range]
+        ankle_x = df_left['Tobillo I_x'][min_range:max_range]
+        ankle_y = -df_left['Tobillo I_y'][min_range:max_range]
+        meta_x = df_left['Metatarso I_x'][min_range:max_range]
+        meta_y = -df_left['Metatarso I_y'][min_range:max_range]
 
-        trace_hip = go.Scatter(
-            x=df_left['Cadera I_x'][min_range:max_range],
-            y=-df_left['Cadera I_y'][min_range:max_range],
-            name='Cadera L',
-            )
-
-        trace_knee = go.Scatter(
-            x=df_left['Rodilla I_x'][min_range:max_range],
-            y=-df_left['Rodilla I_y'][min_range:max_range],
-            name='Rodilla L',
-            )
-
-        trace_ankle = go.Scatter(
-            x=df_left['Tobillo I_x'][min_range:max_range],
-            y=-df_left['Tobillo I_y'][min_range:max_range],
-            name='Tobillo L',
-            )
-
-        trace_meta = go.Scatter(
-            x=df_left['Metatarso I_x'][min_range:max_range],
-            y=-df_left['Metatarso I_y'][min_range:max_range],
-            name='Metatarso L',
-            )
+        trace_acro = go.Scatter(x=acro_x, y=acro_y, name='Acromion L')
+        trace_hip = go.Scatter(x=hip_x, y=hip_y, name='Cadera L')
+        trace_knee = go.Scatter(x=knee_x, y=knee_y, name='Rodilla L')
+        trace_ankle = go.Scatter(x=ankle_x, y=ankle_y, name='Tobillo L')
+        trace_meta = go.Scatter(x=meta_x, y=meta_y, name='Metatarso L')
 
         fig = make_subplots(specs=[[{"secondary_y": False}]])
         #if st.checkbox('Acromion L', value=True): fig.add_trace(trace_acro)
@@ -524,38 +593,96 @@ if show_xy_pos:
         if "Metatarso" in xy_pos_list: fig.add_trace(trace_meta)
         st.plotly_chart(fig, use_container_width=True)
 
+        acro_x_vel = get_delta_simp(acro_x.tolist())
+        acro_y_vel = get_delta_simp(acro_y.tolist())
+        hip_x_vel = get_delta_simp(hip_x.tolist())
+        hip_y_vel = get_delta_simp(hip_y.tolist())
+        knee_x_vel = get_delta_simp(knee_x.tolist())
+        knee_y_vel = get_delta_simp(knee_y.tolist())
+        ankle_x_vel = get_delta_simp(ankle_x.tolist())
+        ankle_y_vel = get_delta_simp(ankle_y.tolist())
+        meta_x_vel = get_delta_simp(meta_x.tolist())
+        meta_y_vel = get_delta_simp(meta_y.tolist())
+
+        trace_acro_vel = go.Scatter(x=acro_x_vel, y=acro_y_vel, name='Acromion L')
+        trace_hip_vel = go.Scatter(x=hip_x_vel, y=hip_y_vel, name='Cadera L')
+        trace_knee_vel = go.Scatter(x=knee_x_vel, y=knee_y_vel, name='Rodilla L')
+        trace_ankle_vel = go.Scatter(x=ankle_x_vel, y=ankle_y_vel, name='Tobillo L')
+        trace_meta_vel = go.Scatter(x=meta_x_vel, y=meta_y_vel, name='Metatarso L')
+
+        """#### Velocidades plano xy"""
+        fig2 = make_subplots(specs=[[{"secondary_y": False}]])
+        if "Acromion" in xy_pos_list: fig2.add_trace(trace_acro_vel)
+        if "cadera" in xy_pos_list: fig2.add_trace(trace_hip_vel)
+        if "Rodilla" in xy_pos_list: fig2.add_trace(trace_knee_vel)
+        if "Tobillo" in xy_pos_list: fig2.add_trace(trace_ankle_vel)
+        if "Metatarso" in xy_pos_list: fig2.add_trace(trace_meta_vel)
+        st.plotly_chart(fig2, use_container_width=True)
+
+        acro_x_acc = get_delta_simp(acro_x_vel)
+        acro_y_acc = get_delta_simp(acro_y_vel)
+        hip_x_acc = get_delta_simp(hip_x_vel)
+        hip_y_acc = get_delta_simp(hip_y_vel)
+        knee_x_acc = get_delta_simp(knee_x_vel)
+        knee_y_acc = get_delta_simp(knee_y_vel)
+        ankle_x_acc = get_delta_simp(ankle_x_vel)
+        ankle_y_acc = get_delta_simp(ankle_y_vel)
+        meta_x_acc = get_delta_simp(meta_x_vel)
+        meta_y_acc = get_delta_simp(meta_y_vel)
+
+        trace_acro_acc = go.Scatter(x=acro_x_acc, y=acro_y_acc, name='Acromion L')
+        trace_hip_acc = go.Scatter(x=hip_x_acc, y=hip_y_acc, name='Cadera L')
+        trace_knee_acc = go.Scatter(x=knee_x_acc, y=knee_y_acc, name='Rodilla L')
+        trace_ankle_acc = go.Scatter(x=ankle_x_acc, y=ankle_y_acc, name='Tobillo L')
+        trace_meta_acc = go.Scatter(x=meta_x_acc, y=meta_y_acc, name='Metatarso L')
+
+        """#### Aceleraciones plano xy"""
+        fig3 = make_subplots(specs=[[{"secondary_y": False}]])
+        if "Acromion" in xy_pos_list: fig3.add_trace(trace_acro_acc)
+        if "cadera" in xy_pos_list: fig3.add_trace(trace_hip_acc)
+        if "Rodilla" in xy_pos_list: fig3.add_trace(trace_knee_acc)
+        if "Tobillo" in xy_pos_list: fig3.add_trace(trace_ankle_acc)
+        if "Metatarso" in xy_pos_list: fig3.add_trace(trace_meta_acc)
+        st.plotly_chart(fig3, use_container_width=True)
+
+        """#### Magnitud de aceleraciones plano xy"""
+        acro_mag = np.sqrt(acro_x_acc**2 + acro_y_acc**2)
+        hip_mag = np.sqrt(hip_x_acc**2 +  hip_y_acc**2)
+        knee_mag = np.sqrt(knee_x_acc**2 + knee_y_acc**2)
+        ankle_mag = np.sqrt(ankle_x_acc**2 + ankle_y_acc**2)
+        meta_mag = np.sqrt(meta_x_acc**2 + meta_y_acc**2)
+
+        xy_df = pd.DataFrame(list(zip(acro_mag, hip_mag, knee_mag, ankle_mag, meta_mag)), columns =['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'])
+        st.line_chart(get_data(xy_df,xy_pos_list))
+
+
+ 
+        
+
     with colposxy2:
-        min_range, max_range = st.slider("Rango de ciclos de carrera derecha", 0, right_frame_count, [0, 200], 1, format=None, key='right_position_slider')
 
-        trace_acro = go.Scatter(
-            x=df_right['Acromion D_x'][min_range:max_range],
-            y=-df_right['Acromion D_y'][min_range:max_range],
-            name='Acromion R',
-            )
+        ciclo_xy= st.slider('Ciclo de carrera dercha', 0, len(rcc)-1, 1, 1, format=None, key='right_xy_slider', help='Cambia entre los diferentes ciclos de carrera')
+        min_range, max_range = st.slider("Rango de ciclos de carrera derecha", rcc[ciclo_xy], rcc[ciclo_xy+1], [rcc[ciclo_xy], rcc[ciclo_xy+1]], 1, format=None, key='right_position_slider')
 
-        trace_hip = go.Scatter(
-            x=df_right['Cadera D_x'][min_range:max_range],
-            y=-df_right['Cadera D_y'][min_range:max_range],
-            name='Cadera R',
-            )
 
-        trace_knee = go.Scatter(
-            x=df_right['Rodilla D_x'][min_range:max_range],
-            y=-df_right['Rodilla D_y'][min_range:max_range],
-            name='Rodilla R',
-            )
+        acro_x = df_right['Acromion D_x'][min_range:max_range]
+        acro_y = -df_right['Acromion D_y'][min_range:max_range]
+        hip_x = df_right['Cadera D_x'][min_range:max_range]
+        hip_y = -df_right['Cadera D_y'][min_range:max_range]
+        knee_x = df_right['Rodilla D_x'][min_range:max_range]
+        knee_y = -df_right['Rodilla D_y'][min_range:max_range]
+        ankle_x = df_right['Tobillo D_x'][min_range:max_range]
+        ankle_y = -df_right['Tobillo D_y'][min_range:max_range]
+        meta_x = df_right['Metatarso D_x'][min_range:max_range]
+        meta_y = -df_right['Metatarso D_y'][min_range:max_range]
 
-        trace_ankle = go.Scatter(
-            x=df_right['Tobillo D_x'][min_range:max_range],
-            y=-df_right['Tobillo D_y'][min_range:max_range],
-            name='Tobillo R',
-            )
 
-        trace_meta = go.Scatter(
-            x=df_right['Metatarso D_x'][min_range:max_range],
-            y=-df_right['Metatarso D_y'][min_range:max_range],
-            name='Metatarso R',
-            )
+        trace_acro = go.Scatter(x=acro_x, y=acro_y, name='Acromion R')
+        trace_hip = go.Scatter(x=hip_x, y=hip_y, name='Cadera R')
+        trace_knee = go.Scatter(x=knee_x, y=knee_y, name='Rodilla R')
+        trace_ankle = go.Scatter(x=ankle_x, y=ankle_y, name='Tobillo R')
+        trace_meta = go.Scatter(x=meta_x, y=meta_y, name='Metatarso R')
+
 
         fig = make_subplots(specs=[[{"secondary_y": False}]])
         #if st.checkbox('Acromion R', value=True): fig.add_trace(trace_acro)
@@ -569,6 +696,71 @@ if show_xy_pos:
         if "Tobillo" in xy_pos_list: fig.add_trace(trace_ankle)
         if "Metatarso" in xy_pos_list: fig.add_trace(trace_meta)
         st.plotly_chart(fig, use_container_width=True)
+
+        acro_x_vel = get_delta_simp(acro_x.tolist())
+        acro_y_vel = get_delta_simp(acro_y.tolist())
+        hip_x_vel = get_delta_simp(hip_x.tolist())
+        hip_y_vel = get_delta_simp(hip_y.tolist())
+        knee_x_vel = get_delta_simp(knee_x.tolist())
+        knee_y_vel = get_delta_simp(knee_y.tolist())
+        ankle_x_vel = get_delta_simp(ankle_x.tolist())
+        ankle_y_vel = get_delta_simp(ankle_y.tolist())
+        meta_x_vel = get_delta_simp(meta_x.tolist())
+        meta_y_vel = get_delta_simp(meta_y.tolist())
+
+        trace_acro_vel = go.Scatter(x=acro_x_vel, y=acro_y_vel, name='Acromion R')
+        trace_hip_vel = go.Scatter(x=hip_x_vel, y=hip_y_vel, name='Cadera R')
+        trace_knee_vel = go.Scatter(x=knee_x_vel, y=knee_y_vel, name='Rodilla R')
+        trace_ankle_vel = go.Scatter(x=ankle_x_vel, y=ankle_y_vel, name='Tobillo R')
+        trace_meta_vel = go.Scatter(x=meta_x_vel, y=meta_y_vel, name='Metatarso R')
+
+        """#### Velocidades plano xy"""
+        fig2 = make_subplots(specs=[[{"secondary_y": False}]])
+        if "Acromion" in xy_pos_list: fig2.add_trace(trace_acro_vel)
+        if "cadera" in xy_pos_list: fig2.add_trace(trace_hip_vel)
+        if "Rodilla" in xy_pos_list: fig2.add_trace(trace_knee_vel)
+        if "Tobillo" in xy_pos_list: fig2.add_trace(trace_ankle_vel)
+        if "Metatarso" in xy_pos_list: fig2.add_trace(trace_meta_vel)
+        st.plotly_chart(fig2, use_container_width=True)
+
+        acro_x_acc = get_delta_simp(acro_x_vel)
+        acro_y_acc = get_delta_simp(acro_y_vel)
+        hip_x_acc = get_delta_simp(hip_x_vel)
+        hip_y_acc = get_delta_simp(hip_y_vel)
+        knee_x_acc = get_delta_simp(knee_x_vel)
+        knee_y_acc = get_delta_simp(knee_y_vel)
+        ankle_x_acc = get_delta_simp(ankle_x_vel)
+        ankle_y_acc = get_delta_simp(ankle_y_vel)
+        meta_x_acc = get_delta_simp(meta_x_vel)
+        meta_y_acc = get_delta_simp(meta_y_vel)
+
+        trace_acro_acc = go.Scatter(x=acro_x_acc, y=acro_y_acc, name='Acromion R')
+        trace_hip_acc = go.Scatter(x=hip_x_acc, y=hip_y_acc, name='Cadera R')
+        trace_knee_acc = go.Scatter(x=knee_x_acc, y=knee_y_acc, name='Rodilla R')
+        trace_ankle_acc = go.Scatter(x=ankle_x_acc, y=ankle_y_acc, name='Tobillo R')
+        trace_meta_acc = go.Scatter(x=meta_x_acc, y=meta_y_acc, name='Metatarso R')
+
+        """#### Aceleraciones plano xy"""
+        fig3 = make_subplots(specs=[[{"secondary_y": False}]])
+        if "Acromion" in xy_pos_list: fig3.add_trace(trace_acro_acc)
+        if "cadera" in xy_pos_list: fig3.add_trace(trace_hip_acc)
+        if "Rodilla" in xy_pos_list: fig3.add_trace(trace_knee_acc)
+        if "Tobillo" in xy_pos_list: fig3.add_trace(trace_ankle_acc)
+        if "Metatarso" in xy_pos_list: fig3.add_trace(trace_meta_acc)
+        st.plotly_chart(fig3, use_container_width=True)
+
+        """#### Magnitud de aceleraciones plano xy"""
+        acro_mag = np.sqrt(acro_x_acc**2 + acro_y_acc**2)
+        hip_mag = np.sqrt(hip_x_acc**2 +  hip_y_acc**2)
+        knee_mag = np.sqrt(knee_x_acc**2 + knee_y_acc**2)
+        ankle_mag = np.sqrt(ankle_x_acc**2 + ankle_y_acc**2)
+        meta_mag = np.sqrt(meta_x_acc**2 + meta_y_acc**2)
+
+
+        xy_df = pd.DataFrame(list(zip(acro_mag, hip_mag, knee_mag, ankle_mag, meta_mag)), columns =['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'])
+        st.line_chart(get_data(xy_df,xy_pos_list))
+
+
 
 if show_heatmaps:
     st.subheader('Mapas de calor')

@@ -1,8 +1,9 @@
 streamlit
-opencv-python-headless
+opencv-python
 pillow
 numpy
 pandas
 matplotlib
 plotly
 altair
+scipy

@@ -14,6 +14,21 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from PIL import Image
 
+left_video_name = 'p5l_arba.mp4'
+right_video_name = 'p5r_arba.mp4'
+
+left_video = cv2.VideoCapture(left_video_name)
+left_frame_count = int(left_video.get(cv2.CAP_PROP_FRAME_COUNT))
+right_video = cv2.VideoCapture(right_video_name)
+right_frame_count = int(right_video.get(cv2.CAP_PROP_FRAME_COUNT))
+
+@st.cache
+def load_video_frame(video_name, id):
+    video = cv2.VideoCapture(video_name)
+    video.set(cv2.CAP_PROP_POS_FRAMES, id)
+    _, frame = video.read()
+    return frame
+
 @st.cache
 def load_data(df_left, df_right, report_left, report_right):
     data_left = json.load(report_left)
@@ -110,8 +125,8 @@ window = 5
 #st.sidebar.button("Exportar")
 
 
-
 st.title('Reporte ABMA')
+
 #colti1, colti2 = st.columns(2)
 
 #with colti1:
@@ -207,8 +222,6 @@ colvis1, colvis2 = st.columns(2)
 
 
 with colvis1:
-    video = cv2.VideoCapture("p5l_arba.mp4")
-    frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
     st.subheader("Extremidad izquierda, contacto inicial")
 
@@ -221,9 +234,10 @@ with colvis1:
     ciclo_l1 = st.slider('Ciclo de carrera izquierda contacto', 0, len(lcc)-1, 1, 1, format=None, key='left_contact_slider', help='Cambia entre los diferentes ciclos de carrera')
     id1 = lcc[ciclo_l1]+st.session_state.cycle_left_1
 
-    
-    video.set(cv2.CAP_PROP_POS_FRAMES, id1)
-    _, frame = video.read()
+    frame = load_video_frame(left_video_name, id1)
+    #left_video.set(cv2.CAP_PROP_POS_FRAMES, id1)
+    #_, frame = left_video.read()
+
 
     st.image(frame, caption=f"Tronco LI: {round(df_left.iloc[id1]['Tronco LI'],1)}, Cadera LI: {round(df_left.iloc[id1]['Cadera LI'],1)}, Rodilla LI: {round(df_left.iloc[id1]['Rodilla LI'],1)}, Tobillo LI: {round(df_left.iloc[id1]['Tobillo LI'],1)}", channels='BGR')
 
@@ -253,9 +267,9 @@ with colvis1:
     ciclo_l2 = st.slider('Ciclo de carrera izquierda separación', 0, len(lsc)-1, 1, 1, format=None, key='left_separation_slider', help='Cambia entre los diferentes ciclos de carrera')
     id3 = lsc[ciclo_l2]+st.session_state.cycle_left_2
 
-    
-    video.set(cv2.CAP_PROP_POS_FRAMES, id3)
-    _, frame = video.read()
+    frame = load_video_frame(left_video_name, id3)
+    #left_video.set(cv2.CAP_PROP_POS_FRAMES, id3)
+    #_, frame = left_video.read()
 
 
     st.image(frame,caption=f"Tronco LI: {round(df_left.iloc[id3]['Tronco LI'],1)}, Cadera LI: {round(df_left.iloc[id3]['Cadera LI'],1)}, Rodilla LI: {round(df_left.iloc[id3]['Rodilla LI'],1)}, Tobillo LI: {round(df_left.iloc[id3]['Tobillo LI'],1)}", channels='BGR')
@@ -279,9 +293,6 @@ with colvis1:
 
 with colvis2:
 
-    video = cv2.VideoCapture("p5r_arba.mp4")
-    frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-
     st.subheader("Extremidad derecha, contacto inicial")
 
     #if st.button('Next', key="next_right_1"):
@@ -293,8 +304,9 @@ with colvis2:
     ciclo_r1 = st.slider('Ciclo de carrera derecha contacto', 0, len(rcc)-1, 1, 1, format=None, key='right_contact_slider', help='Cambia entre los diferentes ciclos de carrera')
     id2 = rcc[ciclo_r1]+st.session_state.cycle_right_1
 
-    video.set(cv2.CAP_PROP_POS_FRAMES, id2)
-    _, frame = video.read()
+    frame = load_video_frame(right_video_name, id2)
+    #right_video.set(cv2.CAP_PROP_POS_FRAMES, id2)
+    #_, frame = right_video.read()
 
     st.image(frame,caption=f"Tronco LD: {round(df_right.iloc[id2]['Tronco LD'],1)}, Cadera LD: {round(df_right.iloc[id2]['Cadera LD'],1)}, Rodilla LD: {round(df_right.iloc[id2]['Rodilla LD'],1)}, Tobillo LD: {round(df_right.iloc[id2]['Tobillo LD'],1)}",channels='BGR')
 
@@ -322,9 +334,10 @@ with colvis2:
     st.session_state.cycle_right_2 = st.slider('Desfase de separación derecho', -window, window, 0, 1, format=None, key='right_separation', help='Cambia entre los cuadros adyacentes al ciclo de carrera seleccionado')
     ciclo_r2 = st.slider('Ciclo de carrera derecha separación', 0, len(rsc)-1, 1, 1, format=None, key='right_separation_slider', help='Cambia entre los diferentes ciclos de carrera')
     id4 = rsc[ciclo_r2]+st.session_state.cycle_right_2
-    
-    video.set(cv2.CAP_PROP_POS_FRAMES, id4)
-    _, frame = video.read()
+
+    frame = load_video_frame(right_video_name, id4)
+    #right_video.set(cv2.CAP_PROP_POS_FRAMES, id4)
+    #_, frame = right_video.read()
 
     st.image(frame,caption=f"Tronco LD: {round(df_right.iloc[id4]['Tronco LD'],1)}, Cadera LD: {round(df_right.iloc[id4]['Cadera LD'],1)}, Rodilla LD: {round(df_right.iloc[id4]['Rodilla LD'],1)}, Tobillo LD: {round(df_right.iloc[id4]['Tobillo LD'],1)}",channels='BGR')
 
@@ -466,7 +479,7 @@ if show_xy_pos:
     colposxy1, colposxy2 = st.columns(2)
 
     with colposxy1:
-        min_range, max_range = st.slider("Rango de ciclos de carrera izquierda", 0, frame_count, [0, 200], 1, format=None, key='left_position_slider')
+        min_range, max_range = st.slider("Rango de ciclos de carrera izquierda", 0, left_frame_count, [0, 200], 1, format=None, key='left_position_slider')
 
         trace_acro = go.Scatter(
             x=df_left['Acromion I_x'][min_range:max_range],
@@ -512,7 +525,7 @@ if show_xy_pos:
         st.plotly_chart(fig, use_container_width=True)
 
     with colposxy2:
-        min_range, max_range = st.slider("Rango de ciclos de carrera derecha", 0, frame_count, [0, 200], 1, format=None, key='right_position_slider')
+        min_range, max_range = st.slider("Rango de ciclos de carrera derecha", 0, right_frame_count, [0, 200], 1, format=None, key='right_position_slider')
 
         trace_acro = go.Scatter(
             x=df_right['Acromion D_x'][min_range:max_range],

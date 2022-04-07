@@ -14,6 +14,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from PIL import Image
 from scipy.signal import butter, filtfilt
+from numpy import diff
 
 left_video_name = 'p5l_arba.mp4'
 right_video_name = 'p5r_arba.mp4'
@@ -60,35 +61,17 @@ def get_pos(df, list, min_range, max_range):
     return pd.DataFrame(data)
 
 @st.cache
-def get_delta_old(df, list, min_range, max_range):
-    data = {}
-    for descriptor in list:
-        data_vel = []
-        data_pos = df[descriptor][min_range:max_range].tolist()
-        for i in range (len(data_pos)-1):
-            delta = (data_pos[i+1]-data_pos[i])*120
-            data_vel.append(delta)
-        data[descriptor] = butter_lowpass_filter(data_vel)
-    return pd.DataFrame(data)
-
-@st.cache
-def get_delta(df):
+def get_gradient(df, fs=120):
     data = {}
     for descriptor in df:
-        data_delta = []
         data_df = df[descriptor].tolist()
-        for i in range (len(data_df)-1):
-            delta = (data_df[i+1]-data_df[i])*120
-            data_delta.append(delta)
+        data_delta = np.gradient(data_df, 1/fs)
         data[descriptor] = butter_lowpass_filter(data_delta)
     return pd.DataFrame(data)
 
 @st.cache
-def get_delta_simp(df):
-    data_delta = []
-    for i in range (len(df)-1):
-        delta = (df[i+1]-df[i])*120
-        data_delta.append(delta)
+def get_gradient_simp(df, fs=120):
+    data_delta = np.gradient(df, 1/fs)
     data = butter_lowpass_filter(data_delta)
     return data
 
@@ -475,12 +458,13 @@ if show_x_pos:
         st.line_chart(x_left)
 
         """#### Velocidades eje x"""
-        x_left_vel = get_delta(x_left)
+        x_left_vel = get_gradient(x_left)
         st.line_chart(x_left_vel)
 
         """#### Aceleraciones eje x"""
-        x_left_acc = get_delta(x_left_vel)
+        x_left_acc = get_gradient(x_left_vel)
         st.line_chart(x_left_acc)
+   
    
 
 
@@ -498,12 +482,12 @@ if show_x_pos:
         st.line_chart(x_right)
 
         """#### Velocidades eje x"""
-        x_right_vel = get_delta(x_right)
+        x_right_vel = get_gradient(x_right)
         st.line_chart(x_right_vel)
 
 
         """#### Aceleraciones eje x"""
-        x_right_acc = get_delta(x_right_vel)
+        x_right_acc = get_gradient(x_right_vel)
         st.line_chart(x_right_acc)
 
 if show_y_pos:
@@ -525,11 +509,11 @@ if show_y_pos:
         st.line_chart(-y_left)
 
         """#### Velocidades eje y"""
-        y_left_vel = get_delta(y_left)
+        y_left_vel = get_gradient(y_left)
         st.line_chart(-y_left_vel)
 
         """#### Aceleraciones eje y"""
-        y_left_acc = get_delta(y_left_vel)
+        y_left_acc = get_gradient(y_left_vel)
         st.line_chart(-y_left_acc)
 
     with colposy2:
@@ -546,11 +530,11 @@ if show_y_pos:
         st.line_chart(-y_right)
 
         """#### Velocidades eje y"""
-        y_right_vel = get_delta(y_right)
+        y_right_vel = get_gradient(y_right)
         st.line_chart(-y_right_vel)
 
         """#### Aceleraciones eje y"""
-        y_right_acc = get_delta(y_right_vel)
+        y_right_acc = get_gradient(y_right_vel)
         st.line_chart(-y_right_acc)
 
 
@@ -593,16 +577,16 @@ if show_xy_pos:
         if "Metatarso" in xy_pos_list: fig.add_trace(trace_meta)
         st.plotly_chart(fig, use_container_width=True)
 
-        acro_x_vel = get_delta_simp(acro_x.tolist())
-        acro_y_vel = get_delta_simp(acro_y.tolist())
-        hip_x_vel = get_delta_simp(hip_x.tolist())
-        hip_y_vel = get_delta_simp(hip_y.tolist())
-        knee_x_vel = get_delta_simp(knee_x.tolist())
-        knee_y_vel = get_delta_simp(knee_y.tolist())
-        ankle_x_vel = get_delta_simp(ankle_x.tolist())
-        ankle_y_vel = get_delta_simp(ankle_y.tolist())
-        meta_x_vel = get_delta_simp(meta_x.tolist())
-        meta_y_vel = get_delta_simp(meta_y.tolist())
+        acro_x_vel = get_gradient_simp(acro_x.tolist())
+        acro_y_vel = get_gradient_simp(acro_y.tolist())
+        hip_x_vel = get_gradient_simp(hip_x.tolist())
+        hip_y_vel = get_gradient_simp(hip_y.tolist())
+        knee_x_vel = get_gradient_simp(knee_x.tolist())
+        knee_y_vel = get_gradient_simp(knee_y.tolist())
+        ankle_x_vel = get_gradient_simp(ankle_x.tolist())
+        ankle_y_vel = get_gradient_simp(ankle_y.tolist())
+        meta_x_vel = get_gradient_simp(meta_x.tolist())
+        meta_y_vel = get_gradient_simp(meta_y.tolist())
 
         trace_acro_vel = go.Scatter(x=acro_x_vel, y=acro_y_vel, name='Acromion L')
         trace_hip_vel = go.Scatter(x=hip_x_vel, y=hip_y_vel, name='Cadera L')
@@ -619,16 +603,16 @@ if show_xy_pos:
         if "Metatarso" in xy_pos_list: fig2.add_trace(trace_meta_vel)
         st.plotly_chart(fig2, use_container_width=True)
 
-        acro_x_acc = get_delta_simp(acro_x_vel)
-        acro_y_acc = get_delta_simp(acro_y_vel)
-        hip_x_acc = get_delta_simp(hip_x_vel)
-        hip_y_acc = get_delta_simp(hip_y_vel)
-        knee_x_acc = get_delta_simp(knee_x_vel)
-        knee_y_acc = get_delta_simp(knee_y_vel)
-        ankle_x_acc = get_delta_simp(ankle_x_vel)
-        ankle_y_acc = get_delta_simp(ankle_y_vel)
-        meta_x_acc = get_delta_simp(meta_x_vel)
-        meta_y_acc = get_delta_simp(meta_y_vel)
+        acro_x_acc = get_gradient_simp(acro_x_vel)
+        acro_y_acc = get_gradient_simp(acro_y_vel)
+        hip_x_acc = get_gradient_simp(hip_x_vel)
+        hip_y_acc = get_gradient_simp(hip_y_vel)
+        knee_x_acc = get_gradient_simp(knee_x_vel)
+        knee_y_acc = get_gradient_simp(knee_y_vel)
+        ankle_x_acc = get_gradient_simp(ankle_x_vel)
+        ankle_y_acc = get_gradient_simp(ankle_y_vel)
+        meta_x_acc = get_gradient_simp(meta_x_vel)
+        meta_y_acc = get_gradient_simp(meta_y_vel)
 
         trace_acro_acc = go.Scatter(x=acro_x_acc, y=acro_y_acc, name='Acromion L')
         trace_hip_acc = go.Scatter(x=hip_x_acc, y=hip_y_acc, name='Cadera L')
@@ -697,16 +681,16 @@ if show_xy_pos:
         if "Metatarso" in xy_pos_list: fig.add_trace(trace_meta)
         st.plotly_chart(fig, use_container_width=True)
 
-        acro_x_vel = get_delta_simp(acro_x.tolist())
-        acro_y_vel = get_delta_simp(acro_y.tolist())
-        hip_x_vel = get_delta_simp(hip_x.tolist())
-        hip_y_vel = get_delta_simp(hip_y.tolist())
-        knee_x_vel = get_delta_simp(knee_x.tolist())
-        knee_y_vel = get_delta_simp(knee_y.tolist())
-        ankle_x_vel = get_delta_simp(ankle_x.tolist())
-        ankle_y_vel = get_delta_simp(ankle_y.tolist())
-        meta_x_vel = get_delta_simp(meta_x.tolist())
-        meta_y_vel = get_delta_simp(meta_y.tolist())
+        acro_x_vel = get_gradient_simp(acro_x.tolist())
+        acro_y_vel = get_gradient_simp(acro_y.tolist())
+        hip_x_vel = get_gradient_simp(hip_x.tolist())
+        hip_y_vel = get_gradient_simp(hip_y.tolist())
+        knee_x_vel = get_gradient_simp(knee_x.tolist())
+        knee_y_vel = get_gradient_simp(knee_y.tolist())
+        ankle_x_vel = get_gradient_simp(ankle_x.tolist())
+        ankle_y_vel = get_gradient_simp(ankle_y.tolist())
+        meta_x_vel = get_gradient_simp(meta_x.tolist())
+        meta_y_vel = get_gradient_simp(meta_y.tolist())
 
         trace_acro_vel = go.Scatter(x=acro_x_vel, y=acro_y_vel, name='Acromion R')
         trace_hip_vel = go.Scatter(x=hip_x_vel, y=hip_y_vel, name='Cadera R')
@@ -723,16 +707,16 @@ if show_xy_pos:
         if "Metatarso" in xy_pos_list: fig2.add_trace(trace_meta_vel)
         st.plotly_chart(fig2, use_container_width=True)
 
-        acro_x_acc = get_delta_simp(acro_x_vel)
-        acro_y_acc = get_delta_simp(acro_y_vel)
-        hip_x_acc = get_delta_simp(hip_x_vel)
-        hip_y_acc = get_delta_simp(hip_y_vel)
-        knee_x_acc = get_delta_simp(knee_x_vel)
-        knee_y_acc = get_delta_simp(knee_y_vel)
-        ankle_x_acc = get_delta_simp(ankle_x_vel)
-        ankle_y_acc = get_delta_simp(ankle_y_vel)
-        meta_x_acc = get_delta_simp(meta_x_vel)
-        meta_y_acc = get_delta_simp(meta_y_vel)
+        acro_x_acc = get_gradient_simp(acro_x_vel)
+        acro_y_acc = get_gradient_simp(acro_y_vel)
+        hip_x_acc = get_gradient_simp(hip_x_vel)
+        hip_y_acc = get_gradient_simp(hip_y_vel)
+        knee_x_acc = get_gradient_simp(knee_x_vel)
+        knee_y_acc = get_gradient_simp(knee_y_vel)
+        ankle_x_acc = get_gradient_simp(ankle_x_vel)
+        ankle_y_acc = get_gradient_simp(ankle_y_vel)
+        meta_x_acc = get_gradient_simp(meta_x_vel)
+        meta_y_acc = get_gradient_simp(meta_y_vel)
 
         trace_acro_acc = go.Scatter(x=acro_x_acc, y=acro_y_acc, name='Acromion R')
         trace_hip_acc = go.Scatter(x=hip_x_acc, y=hip_y_acc, name='Cadera R')

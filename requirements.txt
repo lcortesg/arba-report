@@ -7,3 +7,4 @@ matplotlib
 plotly
 altair
 scipy
+mysql-connector-python-rf

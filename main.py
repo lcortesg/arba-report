@@ -37,7 +37,6 @@ def main():
     else:
         st.sidebar.error("ID de examen inválido")
 
-
 def connect_to_db():
     try:
         with connect(
@@ -112,6 +111,25 @@ def get_pos(df, list, min_range, max_range):
         else:
             data[descriptor] = butter_lowpass_filter(df[descriptor][min_range:max_range])
     return pd.DataFrame(data)
+
+@st.cache
+def get_pos_simp(df, descriptor, min_range, max_range):
+    data = {}
+    if descriptor == "Rodilla LI" or descriptor == "Rodilla LD":
+        data[descriptor] = butter_lowpass_filter(-df[descriptor][min_range:max_range])
+    else:
+        data[descriptor] = butter_lowpass_filter(df[descriptor][min_range:max_range])
+    return pd.DataFrame(data)
+
+@st.cache
+def get_pos_cycle(df, descriptor, cycle, cc):
+    data = {}
+    for i in range(cycle):
+        if descriptor == "Rodilla LI" or descriptor == "Rodilla LD":
+            data[f'{descriptor} ciclo {i+1}'] = butter_lowpass_filter(-df[descriptor][cc[i]:cc[i+1]])
+        else:
+            data[f'{descriptor} ciclo {i+1}'] = butter_lowpass_filter(df[descriptor][cc[i]:cc[i+1]])
+    return pd.DataFrame.from_dict(data, orient='index').transpose()
 
 @st.cache
 def get_gradient(df, fs=120):
@@ -243,38 +261,34 @@ def report():
     show_angles = st.sidebar.checkbox('Mostrar ángulos', value=False)
     if show_angles:
         graphics = True
-        ang_list = st.sidebar.multiselect(
+        ang_list = st.sidebar.selectbox(
             'Seleccionar ángulos a graficar',
-            ['Tronco', 'Cadera', 'Rodilla', 'Tobillo'],
-            ['Tronco', 'Cadera', 'Rodilla', 'Tobillo'],
+            ('Tronco', 'Cadera', 'Rodilla', 'Tobillo'),
             key="ang_list")
 
 
     show_x_pos = st.sidebar.checkbox('Mostrar posiciones X', value=False)
     if show_x_pos:
         graphics = True
-        x_pos_list = st.sidebar.multiselect(
+        x_pos_list = st.sidebar.selectbox(
             'Seleccionar posiciones x a graficar',
-            ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
-            ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'], 
+            ('Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'),
             key="x_pos_list")
 
     show_y_pos = st.sidebar.checkbox('Mostrar posiciones Y', value=False)
     if show_y_pos:
         graphics = True
-        y_pos_list = st.sidebar.multiselect(
+        y_pos_list = st.sidebar.selectbox(
             'Seleccionar posiciones y a graficar',
-            ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
-            ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
+            ('Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'),
             key="y_pos_list")
 
     show_xy_pos = st.sidebar.checkbox('Mostrar plano XY', value=False)
     if show_xy_pos:
         graphics = True
-        xy_pos_list = st.sidebar.multiselect(
+        xy_pos_list = st.sidebar.selectbox(
             'Seleccionar posiciones x/y a graficar',
-            ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
-            ['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'],
+            ('Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'),
             key="xy_pos_list")
 
     show_heatmaps = st.sidebar.checkbox('Mostrar mapas de calor', value=False)
@@ -449,7 +463,8 @@ def report():
         colang1, colang2 = st.columns(2)
 
         with colang1:
-            ang_left_list = [s + " LI" for s in ang_list]
+            #ang_left_list = [s + " LI" for s in ang_list]
+            ang_left_list = ang_list + ' LI'
 
             #ang_left_list = st.multiselect(
             #    'Seleccionar ángulos',
@@ -464,11 +479,14 @@ def report():
 
             #min_range, max_range = st.slider("Rango de ciclos de carrera izquierda", 0, 25, [1, 3], 1, format=None, key='left_angle_slider')
             left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, default_cycle, 1, format=None, key='left_angle_slider')
-            ang_left = get_pos(df_left, ang_left_list, lcc[0], lcc[left_range])
+            #ang_left = get_pos_simp(df_left, ang_left_list, lcc[0], lcc[left_range])
+            ang_left = get_pos_cycle(df_left, ang_left_list, left_range, lcc)
             st.line_chart(ang_left)
 
         with colang2:
-            ang_right_list = [s + " LD" for s in ang_list]
+            #ang_right_list = [s + " LD" for s in ang_list]
+            ang_right_list = ang_list + " LD"
+
             #ang_right_list = st.multiselect(
             #    'Seleccionar ángulos a graficar',
             #    ['Tronco LD', 'Cadera LD', 'Rodilla LD', 'Tobillo LD'],
@@ -480,7 +498,8 @@ def report():
             #if st.checkbox('Tobillo R', value=True, help="Ángulo del tobillo respecto a la horizontal"): ang_right_list.append('Tobillo LD')
             #right_range = st.number_input('Cantidad de ciclos de carrera derecha', 1, len(rcc)-1, default_cycle, 1)
             right_range = st.slider('Cantidad de ciclos de carrera derecha', 1, len(rcc)-1, default_cycle, 1, format=None, key='right_angle_slider')
-            ang_right = get_pos(df_right, ang_right_list, rcc[0], rcc[right_range])
+            #ang_right = get_pos_simp(df_right, ang_right_list, rcc[0], rcc[right_range])
+            ang_right = get_pos_cycle(df_right, ang_right_list, right_range, rcc)
             st.line_chart(ang_right)
 
     if show_x_pos:
@@ -488,7 +507,9 @@ def report():
         colposx1, colposx2 = st.columns(2)
 
         with colposx1:
-            x_left_list = [s + " I_x" for s in x_pos_list]
+            #x_left_list = [s + " I_x" for s in x_pos_list]
+            x_left_list = x_pos_list + " I_x"
+
             #x_left_list=[]
             #if st.checkbox('Acromion Lx', value=True): x_left_list.append('Acromion I_x')
             #if st.checkbox('Cadera Lx', value=True): x_left_list.append('Cadera I_x')
@@ -497,7 +518,8 @@ def report():
             #if st.checkbox('Metatarso Lx', value=True): x_left_list.append('Metatarso I_x')
 
             left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, default_cycle, 1, format=None, key='left_x_slider')
-            x_left = get_pos(df_left, x_left_list, lcc[0], lcc[left_range])
+            #x_left = get_pos(df_left, x_left_list, lcc[0], lcc[left_range])
+            x_left = get_pos_cycle(df_left, x_left_list, left_range, lcc)
             st.line_chart(x_left)
 
             """#### Velocidades eje x"""
@@ -509,7 +531,9 @@ def report():
             st.line_chart(x_left_acc)
 
         with colposx2:
-            x_right_list = [s + " D_x" for s in x_pos_list]
+            #x_right_list = [s + " D_x" for s in x_pos_list]
+            x_right_list = x_pos_list + " D_x"
+
             #x_right_list=[]
             #if st.checkbox('Acromion Rx', value=True): x_right_list.append('Acromion D_x')
             #if st.checkbox('Cadera Rx', value=True): x_right_list.append('Cadera D_x')
@@ -518,7 +542,8 @@ def report():
             #if st.checkbox('Metatarso Rx', value=True): x_right_list.append('Metatarso D_x')
 
             right_range = st.slider('Cantidad de ciclos de carrera derecha', 1, len(rcc)-1, default_cycle, 1, format=None, key='right_x_slider')
-            x_right = get_pos(df_right, x_right_list, rcc[0], rcc[right_range])
+            #x_right = get_pos(df_right, x_right_list, rcc[0], rcc[right_range])
+            x_right = get_pos_cycle(df_right, x_right_list, right_range, rcc)
             st.line_chart(x_right)
 
             """#### Velocidades eje x"""
@@ -535,7 +560,9 @@ def report():
         colposy1, colposy2 = st.columns(2)
 
         with colposy1:
-            y_left_list = [s + " I_y" for s in y_pos_list]
+            #y_left_list = [s + " I_y" for s in y_pos_list]
+            y_left_list = y_pos_list + " I_y"
+
             #y_left_list=[]
             #if st.checkbox('Acromion Ly', value=True): y_left_list.append('Acromion I_y')
             #if st.checkbox('Cadera Ly', value=True): y_left_list.append('Cadera I_y')
@@ -545,7 +572,8 @@ def report():
 
             left_range = st.slider('Cantidad de ciclos de carrera izquierda', 1, len(lcc)-1, default_cycle, 1, format=None, key='left_y_slider')
 
-            y_left = get_pos(df_left, y_left_list, lcc[0], lcc[left_range])
+            #y_left = get_pos(df_left, y_left_list, lcc[0], lcc[left_range])
+            y_left = get_pos_cycle(df_left, y_left_list, left_range, lcc)
             st.line_chart(-y_left)
 
             """#### Velocidades eje y"""
@@ -557,7 +585,8 @@ def report():
             st.line_chart(-y_left_acc)
 
         with colposy2:
-            y_right_list = [s + " D_y" for s in y_pos_list]
+            #y_right_list = [s + " D_y" for s in y_pos_list]
+            y_right_list = y_pos_list + " D_y"
             #y_right_list=[]
             #if st.checkbox('Acromion Ry', value=True): y_right_list.append('Acromion D_y')
             #if st.checkbox('Cadera Ry', value=True): y_right_list.append('Cadera D_y')
@@ -566,7 +595,8 @@ def report():
             #if st.checkbox('Metatarso Ry', value=True): y_right_list.append('Metatarso D_y')
 
             right_range = st.slider('Cantidad de ciclos de carrera derecha', 1, len(rcc)-1, default_cycle, 1, format=None, key='right_y_slider')
-            y_right = get_pos(df_right, y_right_list, rcc[0], rcc[right_range])
+            #y_right = get_pos(df_right, y_right_list, rcc[0], rcc[right_range])
+            y_right = get_pos_cycle(df_right, y_right_list, right_range, rcc)
             st.line_chart(-y_right)
 
             """#### Velocidades eje y"""

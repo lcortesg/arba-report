@@ -8,3 +8,4 @@ plotly
 altair
 scipy
 mysql-connector-python-rf
+streamlit-cropper

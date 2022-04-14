@@ -107,7 +107,10 @@ def get_data(df, list):
 def get_pos(df, list, min_range, max_range):
     data = {}
     for descriptor in list:
-        data[descriptor] = butter_lowpass_filter(df[descriptor][min_range:max_range])
+        if descriptor == "Rodilla LI" or descriptor == "Rodilla LD":
+            data[descriptor] = butter_lowpass_filter(-df[descriptor][min_range:max_range])
+        else:
+            data[descriptor] = butter_lowpass_filter(df[descriptor][min_range:max_range])
     return pd.DataFrame(data)
 
 @st.cache

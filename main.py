@@ -73,7 +73,7 @@ def connect_db():
             connection.close()
             st.sidebar.error("MySQL connection is closed")
 
-@st.cache
+#@st.cache
 def butter_lowpass_filter(data, cutoff=6, fs=120, order=8):
     nyq = 0.5 * fs  # Nyquist Frequency
     normal_cutoff = cutoff / nyq  # Normalise frequency
@@ -102,7 +102,7 @@ def get_data(df, list):
         data[descriptor] = df[descriptor]
     return pd.DataFrame(data)
 
-@st.cache
+#@st.cache
 def get_pos(df, list, min_range, max_range):
     data = {}
     for descriptor in list:
@@ -112,7 +112,7 @@ def get_pos(df, list, min_range, max_range):
             data[descriptor] = butter_lowpass_filter(df[descriptor][min_range:max_range])
     return pd.DataFrame(data)
 
-@st.cache
+#@st.cache
 def get_pos_simp(df, descriptor, min_range, max_range):
     data = {}
     if descriptor == "Rodilla LI" or descriptor == "Rodilla LD":
@@ -121,7 +121,7 @@ def get_pos_simp(df, descriptor, min_range, max_range):
         data[descriptor] = butter_lowpass_filter(df[descriptor][min_range:max_range])
     return pd.DataFrame(data)
 
-@st.cache
+#@st.cache
 def get_pos_cycle(df, descriptor, cycle, cc):
     data = {}
     for i in range(cycle):
@@ -131,16 +131,17 @@ def get_pos_cycle(df, descriptor, cycle, cc):
             data[f'{descriptor} ciclo {i+1}'] = butter_lowpass_filter(df[descriptor][cc[i]:cc[i+1]])
     return pd.DataFrame.from_dict(data, orient='index').transpose()
 
-@st.cache
+#@st.cache
 def get_gradient(df, fs=120):
     data = {}
     for descriptor in df:
         data_df = df[descriptor].tolist()
+        data_df = [x for x in data_df if np.isnan(x) == False]
         data_delta = np.gradient(data_df, 1/fs)
         data[descriptor] = butter_lowpass_filter(data_delta)
-    return pd.DataFrame(data)
+    return pd.DataFrame.from_dict(data, orient='index').transpose()
 
-@st.cache
+#@st.cache
 def get_gradient_simp(df, fs=120):
     data_delta = np.gradient(df, 1/fs)
     data = butter_lowpass_filter(data_delta)
@@ -521,14 +522,17 @@ def report():
             #x_left = get_pos(df_left, x_left_list, lcc[0], lcc[left_range])
             x_left = get_pos_cycle(df_left, x_left_list, left_range, lcc)
             st.line_chart(x_left)
+            #st.write(x_left)
 
             """#### Velocidades eje x"""
             x_left_vel = get_gradient(x_left)
             st.line_chart(x_left_vel)
+            #st.write(x_left_vel)
 
             """#### Aceleraciones eje x"""
             x_left_acc = get_gradient(x_left_vel)
             st.line_chart(x_left_acc)
+            #st.write(x_left_acc)
 
         with colposx2:
             #x_right_list = [s + " D_x" for s in x_pos_list]

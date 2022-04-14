@@ -73,7 +73,7 @@ def connect_db():
             connection.close()
             st.sidebar.error("MySQL connection is closed")
 
-#@st.cache
+@st.cache
 def butter_lowpass_filter(data, cutoff=6, fs=120, order=8):
     nyq = 0.5 * fs  # Nyquist Frequency
     normal_cutoff = cutoff / nyq  # Normalise frequency
@@ -102,7 +102,7 @@ def get_data(df, list):
         data[descriptor] = df[descriptor]
     return pd.DataFrame(data)
 
-#@st.cache
+@st.cache
 def get_pos(df, list, min_range, max_range):
     data = {}
     for descriptor in list:
@@ -112,7 +112,7 @@ def get_pos(df, list, min_range, max_range):
             data[descriptor] = butter_lowpass_filter(df[descriptor][min_range:max_range])
     return pd.DataFrame(data)
 
-#@st.cache
+@st.cache
 def get_pos_simp(df, descriptor, min_range, max_range):
     data = {}
     if descriptor == "Rodilla LI" or descriptor == "Rodilla LD":
@@ -121,7 +121,7 @@ def get_pos_simp(df, descriptor, min_range, max_range):
         data[descriptor] = butter_lowpass_filter(df[descriptor][min_range:max_range])
     return pd.DataFrame(data)
 
-#@st.cache
+@st.cache
 def get_pos_cycle(df, descriptor, cycle, cc):
     data = {}
     for i in range(cycle):
@@ -131,7 +131,7 @@ def get_pos_cycle(df, descriptor, cycle, cc):
             data[f'{descriptor} ciclo {i+1}'] = butter_lowpass_filter(df[descriptor][cc[i]:cc[i+1]])
     return pd.DataFrame.from_dict(data, orient='index').transpose()
 
-#@st.cache
+@st.cache
 def get_gradient(df, fs=120):
     data = {}
     for descriptor in df:
@@ -141,7 +141,7 @@ def get_gradient(df, fs=120):
         data[descriptor] = butter_lowpass_filter(data_delta)
     return pd.DataFrame.from_dict(data, orient='index').transpose()
 
-#@st.cache
+@st.cache
 def get_gradient_simp(df, fs=120):
     data_delta = np.gradient(df, 1/fs)
     data = butter_lowpass_filter(data_delta)

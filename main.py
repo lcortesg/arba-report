@@ -703,15 +703,15 @@ def report():
             if "Metatarso" in xy_pos_list: fig3.add_trace(trace_meta_acc)
             st.plotly_chart(fig3, use_container_width=True)
 
-            """#### Magnitud de aceleraciones plano xy"""
+            #"""#### Magnitud de aceleraciones plano xy"""
             acro_mag = np.sqrt(acro_x_acc**2 + acro_y_acc**2)
             hip_mag = np.sqrt(hip_x_acc**2 +  hip_y_acc**2)
             knee_mag = np.sqrt(knee_x_acc**2 + knee_y_acc**2)
             ankle_mag = np.sqrt(ankle_x_acc**2 + ankle_y_acc**2)
             meta_mag = np.sqrt(meta_x_acc**2 + meta_y_acc**2)
 
-            xy_df = pd.DataFrame(list(zip(acro_mag, hip_mag, knee_mag, ankle_mag, meta_mag)), columns =['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'])
-            st.line_chart(get_data(xy_df,xy_pos_list))
+            #xy_df = pd.DataFrame(list(zip(acro_mag, hip_mag, knee_mag, ankle_mag, meta_mag)), columns =['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'])
+            #st.line_chart(get_data(xy_df,xy_pos_list))
 
 
      
@@ -807,7 +807,7 @@ def report():
             if "Metatarso" in xy_pos_list: fig3.add_trace(trace_meta_acc)
             st.plotly_chart(fig3, use_container_width=True)
 
-            """#### Magnitud de aceleraciones plano xy"""
+            #"""#### Magnitud de aceleraciones plano xy"""
             acro_mag = np.sqrt(acro_x_acc**2 + acro_y_acc**2)
             hip_mag = np.sqrt(hip_x_acc**2 +  hip_y_acc**2)
             knee_mag = np.sqrt(knee_x_acc**2 + knee_y_acc**2)
@@ -815,8 +815,8 @@ def report():
             meta_mag = np.sqrt(meta_x_acc**2 + meta_y_acc**2)
 
 
-            xy_df = pd.DataFrame(list(zip(acro_mag, hip_mag, knee_mag, ankle_mag, meta_mag)), columns =['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'])
-            st.line_chart(get_data(xy_df,xy_pos_list))
+            #xy_df = pd.DataFrame(list(zip(acro_mag, hip_mag, knee_mag, ankle_mag, meta_mag)), columns =['Acromion', 'Cadera', 'Rodilla', 'Tobillo', 'Metatarso'])
+            #st.line_chart(get_data(xy_df,xy_pos_list))
 
 
 

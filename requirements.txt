@@ -1,0 +1,13 @@
+streamlit
+opencv-python
+pillow
+numpy
+pandas
+matplotlib
+plotly
+altair
+scipy
+mysql-connector-python-rf
+streamlit-cropper
+pymysql
+boto3

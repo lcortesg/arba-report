@@ -50,8 +50,8 @@ class Report:
         self.exam_date = f"{exam_info[9]}"
         self.report_date = f"{exam_info[10]}"
 
-        self.left_video_name = "p5l_arba.mp4"
-        self.right_video_name = "p5r_arba.mp4"
+        self.left_video_name = "assets/video/p5l_arba.mp4"
+        self.right_video_name = "assets/video/p5r_arba.mp4"
 
         left_video = cv2.VideoCapture(self.left_video_name)
         left_frame_count = int(left_video.get(cv2.CAP_PROP_FRAME_COUNT))

@@ -12,3 +12,4 @@ streamlit-cropper
 pymysql
 boto3
 pdfkit
+wkhtmltopdf

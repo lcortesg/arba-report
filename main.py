@@ -10,6 +10,9 @@
 
 import streamlit as st
 from PIL import Image
+import pdfkit
+from jinja2 import Environment, PackageLoader, select_autoescape, FileSystemLoader
+from streamlit.components.v1 import iframe
 
 from source.services.Report.report_service import Report
 from source.services.Math.math_service import Math
@@ -44,7 +47,7 @@ def main():
         db_success = True
         db_info = [["","","","","","","","","","2022-03-21","2022-04-01"],["", "Nombre", "Apellido", "", "nombre@apellido.com", "", "", "1889-04-20"],[]]
         if db_success:
-            Report(db_info=db_info)
+            Report(exam_id=exam_id, db_info=db_info)
 
 
 if __name__ == "__main__":

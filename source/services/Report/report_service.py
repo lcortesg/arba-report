@@ -19,6 +19,9 @@ import plotly.figure_factory as ff
 import altair as alt
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import pdfkit
+from jinja2 import Environment, PackageLoader, select_autoescape, FileSystemLoader
+from streamlit.components.v1 import iframe
 
 import streamlit as st
 from source.services.Math.math_service import Math
@@ -29,6 +32,7 @@ from source.services.AWS.S3 import S3
 
 
 class Report:
+    
 
     window = 5
     default_cycle = 1
@@ -36,6 +40,7 @@ class Report:
 
     def __init__(
         self,
+        exam_id="",
         db_info=[],
     ):
 
@@ -183,6 +188,29 @@ class Report:
                 self.create_xy_positions()
             if show_heatmaps:
                 self.create_heatmaps()
+                
+        env = Environment(loader=FileSystemLoader("."), autoescape=select_autoescape())
+        template = env.get_template("templatew.html")
+        submit = st.sidebar.button("📄 Generar PDF")
+        if submit:
+            html = template.render(
+                name=self.name,
+                age=self.age,
+                email=self.email,
+                exam_date=self.exam_date,
+            )
+
+            pdf = pdfkit.from_string(html, False)
+            st.balloons()
+            st.sidebar.success("🎉 Reporte generado exitosamente!")
+            #st.write(html, unsafe_allow_html=True)
+            #st.write("")
+            st.sidebar.download_button(
+                "⬇️ Descargar PDF",
+                data=pdf,
+                file_name=f"reporte_{exam_id}.pdf",
+                mime="application/octet-stream",
+            )
 
     def create_title(self, text):
         st.title(text)

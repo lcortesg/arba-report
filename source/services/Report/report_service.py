@@ -200,8 +200,13 @@ class Report:
                 exam_date=self.exam_date,
             )
 
-            pdf = pdfkit.from_string(html, False)
-            st.balloons()
+            #pdf = pdfkit.from_string(html, False)
+            #pdf = pdfkit.from_url("localhost:8501")
+            options = {
+                "enable-local-file-access": ""
+            }
+            pdf = pdfkit.from_file("templatew.html", output_path=False, options=options)
+            #st.balloons()
             st.sidebar.success("🎉 Reporte generado exitosamente!")
             #st.write(html, unsafe_allow_html=True)
             #st.write("")
